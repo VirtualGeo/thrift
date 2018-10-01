@@ -1621,8 +1621,8 @@ void t_cpp_generator::generate_struct_ostream_operator_decl(std::ostream& out, t
 void t_cpp_generator::generate_struct_ostream_operator(std::ostream& out, t_struct* tstruct) {
   if (!has_custom_ostream(tstruct)) {
     // thrift defines this behavior
-    out << "THRIFT_DLLEXPORT std::ostream& operator<<(std::ostream& out, const "
-        << tstruct->get_name() << "& obj)" << endl;
+    out << "std::ostream& operator<<(std::ostream& out, const " << tstruct->get_name() << "& obj)"
+        << endl;
     scope_up(out);
     out << indent() << "obj.printTo(out);" << endl << indent() << "return out;" << endl;
     scope_down(out);
