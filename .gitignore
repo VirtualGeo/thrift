@@ -384,3 +384,5 @@ project.lock.json
 /tutorial/rs/Cargo.lock
 /ylwrap
 
+/Generated_**
+/External_**
