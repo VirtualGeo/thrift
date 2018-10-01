@@ -409,8 +409,10 @@ void t_cpp_generator::init_generator() {
 
   f_types_ << "#if defined(THRIFT_COMPILED)" << endl
            << "#  define THRIFT_DLLEXPORT __declspec(dllexport)" << endl
-           << "#else" << endl
+           << "#elif defined(THRIFT_LINKED)" << endl
            << "#  define THRIFT_DLLEXPORT __declspec(dllimport)" << endl
+           << "#else" << endl
+           << "#  define THRIFT_DLLEXPORT" << endl
            << "#endif" << endl
            << endl;
 
