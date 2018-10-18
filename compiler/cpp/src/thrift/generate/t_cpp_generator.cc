@@ -407,12 +407,16 @@ void t_cpp_generator::init_generator() {
            << "#define " << program_name_ << "_TYPES_H" << endl
            << endl;
 
-  f_types_ << "#if defined(THRIFT_COMPILED)" << endl
-           << "#  define THRIFT_DLLEXPORT __declspec(dllexport)" << endl
-           << "#elif defined(THRIFT_LINKED)" << endl
-           << "#  define THRIFT_DLLEXPORT __declspec(dllimport)" << endl
-           << "#else" << endl
-           << "#  define THRIFT_DLLEXPORT" << endl
+  f_types_ << "#if defined(_WINDOWS)" << endl
+           << "#  if defined(THRIFT_COMPILED)" << endl
+           << "#    define THRIFT_DLLEXPORT __declspec(dllexport)" << endl
+           << "#  elif defined(THRIFT_LINKED)" << endl
+           << "#    define THRIFT_DLLEXPORT __declspec(dllimport)" << endl
+           << "#  else" << endl
+           << "#    define THRIFT_DLLEXPORT" << endl
+           << "#  else" << endl
+           << "#    define THRIFT_DLLEXPORT" << endl
+           << "#  endif" << endl
            << "#endif" << endl
            << endl;
 
