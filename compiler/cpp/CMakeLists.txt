@@ -74,6 +74,7 @@ macro(THRIFT_ADD_COMPILER name description initial)
 endmacro()
 
 # The following compiler can be enabled or disabled
+THRIFT_ADD_COMPILER(c_api   "Enable compiler for C API (DXT Specific)" ON)
 THRIFT_ADD_COMPILER(c_glib  "Enable compiler for C with Glib" ON)
 THRIFT_ADD_COMPILER(cpp     "Enable compiler for C++" ON)
 THRIFT_ADD_COMPILER(java    "Enable compiler for Java"   ON)
