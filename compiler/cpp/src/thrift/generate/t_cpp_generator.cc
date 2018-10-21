@@ -414,9 +414,9 @@ void t_cpp_generator::init_generator() {
            << "#    define THRIFT_DLLEXPORT __declspec(dllimport)" << endl
            << "#  else" << endl
            << "#    define THRIFT_DLLEXPORT" << endl
-           << "#  else" << endl
-           << "#    define THRIFT_DLLEXPORT" << endl
            << "#  endif" << endl
+           << "#else" << endl
+           << "#  define THRIFT_DLLEXPORT" << endl
            << "#endif" << endl
            << endl;
 
