@@ -24,6 +24,18 @@ if %CURRENT_COMPILER% == Win64VC14 (
 	goto :done
 )
 
+if %CURRENT_COMPILER% == Win32VC15 (
+	set GENERATOR="Visual Studio 15 2017"
+	set ZLIB_SUFFIX=vc14
+	goto :done
+)
+
+if %CURRENT_COMPILER% == Win64VC15 (
+	set GENERATOR="Visual Studio 15 2017 Win64"
+	set ZLIB_SUFFIX=vc14.x64
+	goto :done
+)
+
 echo Compiler %CURRENT_COMPILER% is unknown or not supported.
 exit /B 1
 
