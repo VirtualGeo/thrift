@@ -3,6 +3,7 @@
 #include <string>
 #include <vector>
 
+#include <cassert>
 #include <cctype>
 
 #include "thrift/generate/t_oop_generator.h"
@@ -19,6 +20,8 @@ constexpr const char* endl = "\n";
 string to_upper_case(string str);
 string to_lower_case(string str);
 string camel_case_to_underscores(string str);
+
+bool is_base_type(t_type* type);
 
 class t_c_api_generator : public t_oop_generator {
 public:
@@ -74,12 +77,24 @@ private:
   bool first_fw_decl_ = true;
   bool first_struct_ = true;
 
+  int previous_indent_ = 0;
+  int source_indent_ = 0;
+  int csharp_indent_ = 0;
+
 private:
-  string get_type_string(t_type* type);
   std::ostream& make_doc(std::ostream& stream, t_doc* doc, bool add_lf = false);
 
   std::ostream& open_scope(std::ostream& stream);
   std::ostream& close_scope(std::ostream& stream);
+
+  // (De-)Init
+  void init_header();
+  void init_source();
+  void init_csharp();
+
+  void close_header();
+  void close_source();
+  void close_csharp();
 
   // Generators
   void generate_struct_header(t_struct* tstruct);
@@ -88,19 +103,44 @@ private:
   void generate_service_header(t_service* tservice);
   void generate_service_source(t_service* tservice);
   void generate_service_csharp(t_service* tservice);
+
+  void convert_c_type_to_cpp(t_field* tfield);
+
+  string get_c_type_name(t_type* type) const;
+  string get_cpp_type_name(t_type* type) const;
+  string get_cs_type_name(t_type* type) const;
+
+  string get_c_struct_name(t_type* type) const;
+  string get_cpp_struct_name(t_type* type) const;
+  string get_cs_struct_name(t_type* type) const;
+
+  string get_c_enum_value_name(t_enum* tenum, t_enum_value* tvalue) const;
+  string get_cpp_enum_value_name(t_enum* tenum, t_enum_value* tvalue) const;
+  string get_cs_enum_value_name(t_enum* tenum, t_enum_value* tvalue) const;
+
+  string get_c_function_signature(t_function* tfunction, string prefix, bool dllexport);
+  string get_init_service_name(t_service* tservice);
+
+  void push_indent(int indent);
+  void pop_indent(int* indent);
+  void set_indent(int indent);
+
+  std::ostream& align_fn_params(std::ostream& stream, size_t length);
 };
 
 void t_c_api_generator::init_generator() {
   MKDIR(get_out_dir().c_str());
 
-  string f_c_header_name = get_out_dir() + program_name_ + "_api.h";
-  f_header.open(f_c_header_name.c_str());
+  init_header();
+  init_source();
+  init_csharp();
+}
 
-  string f_c_source_name = get_out_dir() + program_name_ + "_api.c";
-  f_source.open(f_c_source_name.c_str());
+void t_c_api_generator::init_header() {
+  string name = get_out_dir() + program_name_ + "_api.h";
+  f_header.open(name.c_str());
 
   f_header << autogen_comment();
-  f_source << autogen_comment();
   // string f_cs_source_name = get_out_dir() + program_name_ + "_api.cs";
 
   define_name_ = nspace_uc_ + "_" + to_upper_case(program_name_) + "_H";
@@ -134,46 +174,82 @@ void t_c_api_generator::init_generator() {
   // TODO: Define list, set, map types
 }
 
+void t_c_api_generator::init_source() {
+  string base_name = get_out_dir() + program_name_ + "_api";
+  string name = get_out_dir() + program_name_ + "_api.c";
+  string header_name = program_name_ + "_api.h";
+
+  f_source.open(name.c_str());
+  f_source << autogen_comment() << endl;
+
+  f_source << "#include <assert.h>" << endl << endl;
+
+  f_source << "#include \"" << header_name << "\"" << endl << endl;
+
+  f_source << "// C++ services" << endl;
+  auto services = program_->get_services();
+  for (const auto& service : services) {
+    const string service_name = service->get_name();
+    f_source << "#include \"" << service_name << "Handler.h"
+             << "\"" << endl;
+  }
+  f_source << endl;
+}
+
+void t_c_api_generator::init_csharp() {
+  string name = get_out_dir() + program_name_ + "_api.cs";
+  f_csharp.open(name.c_str());
+  f_csharp << autogen_comment();
+}
+
 void t_c_api_generator::close_generator() {
+  close_header();
+  close_source();
+  close_csharp();
+}
+
+void t_c_api_generator::close_header() {
   // Close tags
   close_scope(f_header) << endl;
-
   f_header << endl << "#endif // _" << define_name_ << endl;
-
   f_header.close();
+}
+
+void t_c_api_generator::close_source() {
   f_source.close();
+}
+
+void t_c_api_generator::close_csharp() {
+  f_csharp.close();
 }
 
 void t_c_api_generator::generate_typedef(t_typedef* ttypedef) {
   has_typedef_ = true;
+  const string name = nspace_ + ttypedef->get_symbolic();
   make_doc(f_header, ttypedef);
-  indent(f_header) << "typedef " << get_type_string(ttypedef->get_type()) << " "
-                   << ttypedef->get_symbolic() << endl;
+  indent(f_header) << "typedef " << get_c_type_name(ttypedef->get_type()) << " " << name << ";"
+                   << endl;
 }
 
 void t_c_api_generator::generate_enum(t_enum* tenum) {
-  string name = nspace_ + tenum->get_name();
+  const string name = nspace_ + tenum->get_name();
 
-  make_doc(f_header, tenum);
-  indent(f_header) << "typedef struct _" << name << endl;
-  open_scope(f_header);
-
-  indent(f_header) << "enum type" << endl;
+  indent(f_header) << "enum " << name << endl;
   open_scope(f_header);
 
   for (size_t i = 0; i < tenum->get_constants().size(); ++i) {
     t_enum_value* value = tenum->get_constants()[i];
     make_doc(f_header, value, i != 0);
-    indent(f_header) << value->get_name() << " = " << value->get_value() << "," << endl;
+    indent(f_header) << get_c_enum_value_name(tenum, value) << " = " << value->get_value() << ","
+                     << endl;
   }
 
-  close_scope(f_header) << ";" << endl;
-  close_scope(f_header) << " " << name << ";" << endl << endl;
+  close_scope(f_header) << ";" << endl << endl;
 }
 
 void t_c_api_generator::generate_const(t_const* tconst) {
   has_const_ = true;
-  indent(f_header) << "// " << get_type_string(tconst->get_type()) << " " << tconst->get_name()
+  indent(f_header) << "// " << get_c_type_name(tconst->get_type()) << " " << tconst->get_name()
                    << " = " << tconst->get_value() << endl;
 }
 
@@ -187,7 +263,7 @@ void t_c_api_generator::generate_struct_header(t_struct* tstruct) {
     f_header << endl;
     first_struct_ = false;
   }
-  string name = nspace_ + tstruct->get_name();
+  string name = get_c_struct_name(tstruct);
 
   make_doc(f_header, tstruct);
   indent(f_header) << "typedef struct _" << name << endl;
@@ -198,7 +274,7 @@ void t_c_api_generator::generate_struct_header(t_struct* tstruct) {
     t_type* type = field->get_type();
 
     make_doc(f_header, field, i != 0);
-    indent(f_header) << get_type_string(type) << " " << field->get_name() << ";" << endl;
+    indent(f_header) << get_c_type_name(type) << " " << field->get_name() << ";" << endl;
   }
 
   close_scope(f_header) << " " << name << ";" << endl << endl;
@@ -223,49 +299,104 @@ void t_c_api_generator::generate_service_header(t_service* tservice) {
 
   const string service_name = nspace_lc_ + camel_case_to_underscores(tservice->get_name()) + "_";
 
+  // Add a function which will initialize the service on the C++ side.
+  indent(f_header) << "void init_service_" << get_init_service_name(tservice) << ";" << endl;
+  indent(f_header) << "void close_service_" << get_init_service_name(tservice) << ";" << endl;
+
   auto functions = tservice->get_functions();
   for (size_t i = 0; i < functions.size(); ++i) {
     t_function* function = functions[i];
-    const string function_name = service_name + camel_case_to_underscores(function->get_name());
-    std::stringstream s_function;
+    make_doc(f_header, function, true);
+    string function_sig = get_c_function_signature(function, service_name, true) + ";";
 
-    t_type* return_type = function->get_returntype();
-    std::vector<t_field*> params = function->get_arglist()->get_members();
-
-    make_doc(f_header, function, i != 0);
-    s_function << "THRIFT_DLLEXPORT ";
-    s_function << get_type_string(return_type) << " " << function_name << "(";
-
-    size_t definition_size = s_function.str().size();
-
-    for (size_t j = 0; j < params.size(); ++j) {
-      t_field* param = params[j];
-
-      const string param_type = get_type_string(param->get_type());
-      const string param_name = param->get_name();
-
-      if (j != 0) {
-        s_function << "," << endl;
-        indent(s_function);
-        for (size_t k = 0; k < definition_size; ++k) {
-          s_function << " ";
-        }
-      }
-      s_function << param_type << " " << param_name;
-    }
-
-    s_function << ");" << endl;
-
-    indent(f_header) << s_function.str();
+    indent(f_header) << function_sig << endl;
   }
 }
 
 void t_c_api_generator::generate_service_source(t_service* tservice) {
-  // TODO
+  push_indent(source_indent_);
+
+  const string service_name = nspace_lc_ + camel_case_to_underscores(tservice->get_name()) + "_";
+  const string cpp_handler = nspace_ + "::" + tservice->get_name() + "Handler";
+
+  indent(f_source) << cpp_handler << "* g_handler = NULL;" << endl << endl;
+
+  indent(f_source) << "void init_service_" << get_init_service_name(tservice) << endl;
+  open_scope(f_source);
+  indent(f_source) << "if (!g_handler) g_handler = new " << cpp_handler << "();" << endl;
+  close_scope(f_source) << endl << endl;
+
+  indent(f_source) << "void close_service_" << get_init_service_name(tservice) << endl;
+  open_scope(f_source);
+  indent(f_source) << "delete g_handler; g_handler = NULL;" << endl;
+  close_scope(f_source) << endl << endl;
+
+  auto functions = tservice->get_functions();
+  for (size_t i = 0; i < functions.size(); ++i) {
+    t_function* function = functions[i];
+    make_doc(f_source, function, i != 0);
+    string function_sig = get_c_function_signature(function, service_name, false);
+
+    indent(f_source) << function_sig << endl;
+    open_scope(f_source);
+    indent(f_source) << "assert(g_handler && \"init_service_" << get_init_service_name(tservice)
+                     << " has not been called.\");" << endl
+                     << endl;
+
+    auto args = function->get_arglist()->get_sorted_members();
+    std::deque<string> arg_array;
+
+    for (auto arg : args) {
+      convert_c_type_to_cpp(arg);
+      arg_array.push_back("cpp_" + arg->get_name());
+    }
+
+    t_type* return_type = function->get_returntype();
+    bool result_need_conversion = false;
+    string result;
+    if (return_type != nullptr) {
+      if (is_base_type(return_type)) {
+        string typestr = get_c_type_name(return_type);
+        result = typestr + " result = (" + typestr + ")";
+      } else {
+        result_need_conversion = true;
+        arg_array.push_front("cpp_result");
+
+        indent(f_source) << get_cpp_type_name(return_type) << " cpp_result;" << endl;
+      }
+    }
+
+    string fn_call = result + "g_handler->" + function->get_name() + "(";
+    indent(f_source) << fn_call;
+
+    for (size_t j = 0; j < arg_array.size(); ++j) {
+      if (j != 0) {
+        f_source << "," << endl;
+        align_fn_params(f_source, fn_call.size());
+      }
+      f_source << arg_array[j];
+    }
+    f_source << ");" << endl;
+
+    if (result_need_conversion) {
+      f_source << endl;
+      indent(f_source) << get_c_type_name(return_type) << " result;" << endl;
+    }
+
+    if (return_type) {
+      f_source << endl;
+      indent(f_source) << "return result;" << endl;
+    }
+
+    close_scope(f_source) << endl;
+  }
+
+  pop_indent(&source_indent_);
 }
 
 void t_c_api_generator::generate_service_csharp(t_service* tservice) {
-  // TODO
+  push_indent(csharp_indent_);
+  pop_indent(&csharp_indent_);
 }
 
 void t_c_api_generator::generate_forward_declaration(t_struct* tstruct) {
@@ -273,51 +404,8 @@ void t_c_api_generator::generate_forward_declaration(t_struct* tstruct) {
     f_header << endl;
     first_fw_decl_ = false;
   }
-  indent(f_header) << "struct " << tstruct->get_name() << ";" << endl;
-}
-
-string t_c_api_generator::get_type_string(t_type* type) {
-  if (type->is_base_type()) {
-    t_base_type::t_base base_type = ((t_base_type*)type)->get_base();
-    switch (base_type) {
-    case t_base_type::TYPE_VOID:
-      return "void";
-    case t_base_type::TYPE_BOOL:
-      return "int";
-    case t_base_type::TYPE_I8:
-      return "int8_t";
-    case t_base_type::TYPE_I16:
-      return "int16_t";
-    case t_base_type::TYPE_I32:
-      return "int32_t";
-    case t_base_type::TYPE_I64:
-      return "int64_t";
-    case t_base_type::TYPE_DOUBLE:
-      return "double";
-    case t_base_type::TYPE_STRING:
-      return "char*";
-    }
-  } else if (type->is_container()) {
-    // TODO
-    if (type->is_list()) {
-      t_list* tlist = static_cast<t_list*>(type);
-      return "list<" + get_type_string(tlist->get_elem_type()) + ">";
-    }
-    if (type->is_map()) {
-      t_map* tmap = static_cast<t_map*>(type);
-      string key_string = get_type_string(tmap->get_key_type());
-      string val_string = get_type_string(tmap->get_val_type());
-      return "map<" + key_string + ", " + val_string + ">";
-    }
-    if (type->is_set()) {
-      t_set* tset = static_cast<t_set*>(type);
-      return "set<" + get_type_string(tset->get_elem_type()) + ">";
-    }
-  } else {
-    return type->get_name();
-  }
-
-  return "";
+  const string name = get_c_struct_name(tstruct);
+  indent(f_header) << "typedef struct _" << name << " " << name << ";" << endl;
 }
 
 std::ostream& t_c_api_generator::make_doc(std::ostream& stream, t_doc* doc, bool add_lf) {
@@ -353,6 +441,121 @@ std::ostream& t_c_api_generator::close_scope(std::ostream& stream) {
   return stream;
 }
 
+string t_c_api_generator::get_c_function_signature(t_function* tfunction,
+                                                   string prefix,
+                                                   bool dllexport) {
+  const string function_name = prefix + camel_case_to_underscores(tfunction->get_name());
+  std::stringstream s_function;
+
+  t_type* return_type = tfunction->get_returntype();
+  std::vector<t_field*> params = tfunction->get_arglist()->get_members();
+
+  if (dllexport) {
+    s_function << "THRIFT_DLLEXPORT ";
+  }
+  s_function << get_c_type_name(return_type) << " " << function_name << "(";
+
+  size_t definition_size = s_function.str().size();
+
+  for (size_t j = 0; j < params.size(); ++j) {
+    t_field* param = params[j];
+
+    const string param_type = get_c_type_name(param->get_type());
+    const string param_name = param->get_name();
+
+    if (j != 0) {
+      s_function << "," << endl;
+      align_fn_params(s_function, definition_size);
+    }
+    s_function << param_type << " " << param_name;
+  }
+
+  s_function << ")";
+
+  return s_function.str();
+}
+
+string t_c_api_generator::get_init_service_name(t_service* tservice) {
+  return nspace_lc_ + camel_case_to_underscores(tservice->get_name()) + "()";
+}
+
+void t_c_api_generator::convert_c_type_to_cpp(t_field* field) {
+  t_type* type = field->get_type();
+
+  const string tname = get_cpp_type_name(type);
+  const string cname = field->get_name();
+  const string fname = "cpp_" + cname;
+
+  indent(f_source) << tname << " " << fname;
+
+  if (is_base_type(type)) {
+    f_source << " = (" << get_cpp_type_name(type) << ")" << cname;
+  }
+
+  f_source << ";" << endl;
+
+  if (is_base_type(type)) {
+    // no-op
+  } else if (type->is_enum()) {
+    t_enum* tenum = (t_enum*)type;
+    auto consts = tenum->get_constants();
+
+    indent(f_source) << "switch (" << field->get_name() << ") {" << endl;
+    indent_up();
+    for (auto value : consts) {
+      indent(f_source) << "case " << get_c_enum_value_name(tenum, value) << ": " << endl;
+      indent_up();
+      indent(f_source) << fname << " = " << get_cpp_enum_value_name(tenum, value) << ";" << endl;
+      indent(f_source) << "break;" << endl;
+      indent_down();
+    }
+    indent_down();
+    indent(f_source) << "}";
+    f_source << endl;
+  } else if (type->is_container()) {
+    assert(false);
+  } else if (type->is_struct()) {
+    for (auto arg : ((t_struct*)type)->get_sorted_members()) {
+      convert_c_type_to_cpp(arg);
+    }
+  } else {
+    std::cerr << get_c_type_name(type) << endl;
+    assert(false);
+  }
+
+  f_source << endl;
+}
+
+void t_c_api_generator::push_indent(int indent) {
+  previous_indent_ = indent_count();
+  set_indent(indent);
+}
+
+void t_c_api_generator::pop_indent(int* indent) {
+  *indent = indent_count();
+  set_indent(previous_indent_);
+}
+
+void t_c_api_generator::set_indent(int indent) {
+  if (indent_count() > indent) {
+    while (indent_count() > indent) {
+      indent_down();
+    }
+  } else {
+    while (indent_count() < indent) {
+      indent_up();
+    }
+  }
+}
+
+std::ostream& t_c_api_generator::align_fn_params(std::ostream& stream, size_t length) {
+  indent(stream);
+  for (size_t i = 0; i < length; ++i) {
+    stream << " ";
+  }
+  return stream;
+}
+
 string to_upper_case(string str) {
   string s(str);
   std::transform(s.begin(), s.end(), s.begin(), ::toupper);
@@ -377,6 +580,136 @@ string camel_case_to_underscores(string str) {
     result += lower_case;
   }
   return result;
+}
+
+string t_c_api_generator::get_c_type_name(t_type* type) const {
+  if (type->is_base_type()) {
+    t_base_type::t_base base_type = ((t_base_type*)type)->get_base();
+    switch (base_type) {
+    case t_base_type::TYPE_VOID:
+      return "void";
+    case t_base_type::TYPE_BOOL:
+      return "int";
+    case t_base_type::TYPE_I8:
+      return "int8_t";
+    case t_base_type::TYPE_I16:
+      return "int16_t";
+    case t_base_type::TYPE_I32:
+      return "int32_t";
+    case t_base_type::TYPE_I64:
+      return "int64_t";
+    case t_base_type::TYPE_DOUBLE:
+      return "double";
+    case t_base_type::TYPE_STRING:
+      return "char*";
+    }
+  } else if (type->is_container()) {
+    // TODO
+    if (type->is_list()) {
+      t_list* tlist = static_cast<t_list*>(type);
+      return "list<" + get_c_type_name(tlist->get_elem_type()) + ">";
+    }
+    if (type->is_map()) {
+      t_map* tmap = static_cast<t_map*>(type);
+      string key_string = get_c_type_name(tmap->get_key_type());
+      string val_string = get_c_type_name(tmap->get_val_type());
+      return "map<" + key_string + ", " + val_string + ">";
+    }
+    if (type->is_set()) {
+      t_set* tset = static_cast<t_set*>(type);
+      return "set<" + get_c_type_name(tset->get_elem_type()) + ">";
+    }
+  } else {
+    return get_c_struct_name(type);
+  }
+
+  return "";
+}
+
+string t_c_api_generator::get_cpp_type_name(t_type* type) const {
+  if (type->is_base_type()) {
+    t_base_type::t_base base_type = ((t_base_type*)type)->get_base();
+    switch (base_type) {
+    case t_base_type::TYPE_VOID:
+      return "void";
+    case t_base_type::TYPE_BOOL:
+      return "bool";
+    case t_base_type::TYPE_I8:
+      return "int8_t";
+    case t_base_type::TYPE_I16:
+      return "int16_t";
+    case t_base_type::TYPE_I32:
+      return "int32_t";
+    case t_base_type::TYPE_I64:
+      return "int64_t";
+    case t_base_type::TYPE_DOUBLE:
+      return "double";
+    case t_base_type::TYPE_STRING:
+      return "std::string";
+    }
+  } else if (type->is_container()) {
+    // TODO
+    if (type->is_list()) {
+      t_list* tlist = static_cast<t_list*>(type);
+      return "std::vector<" + get_cpp_type_name(tlist->get_elem_type()) + ">";
+    }
+    if (type->is_map()) {
+      t_map* tmap = static_cast<t_map*>(type);
+      string key_string = get_cpp_type_name(tmap->get_key_type());
+      string val_string = get_cpp_type_name(tmap->get_val_type());
+      return "std::map<" + key_string + ", " + val_string + ">";
+    }
+    if (type->is_set()) {
+      t_set* tset = static_cast<t_set*>(type);
+      return "std::set<" + get_cpp_type_name(tset->get_elem_type()) + ">";
+    }
+  } else {
+    return get_cpp_struct_name(type);
+  }
+}
+
+string t_c_api_generator::get_cs_type_name(t_type* type) const {
+  std::cerr << "get_cs_type_name() is not implemented" << std::endl;
+  return "";
+}
+
+string t_c_api_generator::get_c_struct_name(t_type* type) const {
+  return nspace_ + type->get_name();
+}
+
+string t_c_api_generator::get_cpp_struct_name(t_type* type) const {
+  return nspace_ + "::" + type->get_name();
+}
+
+string t_c_api_generator::get_cs_struct_name(t_type* type) const {
+  std::cerr << "get_cs_struct_name() is not implemented" << std::endl;
+  return string();
+}
+
+string t_c_api_generator::get_c_enum_value_name(t_enum* tenum, t_enum_value* tvalue) const {
+  return tenum->get_name() + "_" + tvalue->get_name();
+}
+
+string t_c_api_generator::get_cpp_enum_value_name(t_enum* tenum, t_enum_value* tvalue) const {
+  return tenum->get_name() + "::" + tvalue->get_name();
+}
+
+string t_c_api_generator::get_cs_enum_value_name(t_enum* tenum, t_enum_value* tvalue) const {
+  std::cerr << "get_cs_value_name() is not implemented" << std::endl;
+  return string();
+}
+
+bool is_base_type(t_type* type) {
+  if (type->is_base_type()) {
+    return true;
+  }
+
+  if (type->is_typedef()) {
+    t_typedef* t = (t_typedef*)type;
+    return is_base_type(t->get_type());
+  }
+
+  return false;
 }
 
 THRIFT_REGISTER_GENERATOR(c_api, "C API for DXT purposes", "")
