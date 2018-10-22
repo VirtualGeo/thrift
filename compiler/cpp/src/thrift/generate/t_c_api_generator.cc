@@ -1,5 +1,6 @@
 #include <fstream>
 #include <ostream>
+#include <set>
 #include <string>
 #include <vector>
 
@@ -12,6 +13,7 @@
 #define WITH_DOC 1
 
 using std::map;
+using std::set;
 using std::string;
 using std::vector;
 
@@ -78,6 +80,8 @@ private:
   int source_indent_ = 0;
   int csharp_indent_ = 0;
 
+  set<std::string> csharp_keywords_;
+
 private:
   std::ostream& make_doc(std::ostream& stream, t_doc* doc, bool add_lf = false);
 
@@ -125,6 +129,8 @@ private:
   void set_indent(int indent);
 
   std::ostream& align_fn_params(std::ostream& stream, size_t length);
+
+  void init_csharp_keywords();
 };
 
 void t_c_api_generator::init_generator() {
@@ -198,6 +204,8 @@ void t_c_api_generator::init_csharp() {
   string name = get_out_dir() + program_name_ + "_api.cs";
   f_csharp.open(name.c_str());
   f_csharp << autogen_comment();
+
+  init_csharp_keywords();
 }
 
 void t_c_api_generator::close_generator() {
@@ -730,6 +738,114 @@ string t_c_api_generator::get_cpp_enum_value_name(t_enum* tenum, t_enum_value* t
 string t_c_api_generator::get_cs_enum_value_name(t_enum* tenum, t_enum_value* tvalue) const {
   std::cerr << "get_cs_value_name() is not implemented" << std::endl;
   return string();
+}
+
+void t_c_api_generator::init_csharp_keywords() {
+  csharp_keywords_.clear();
+
+  // C# keywords
+  csharp_keywords_.insert("abstract");
+  csharp_keywords_.insert("as");
+  csharp_keywords_.insert("base");
+  csharp_keywords_.insert("bool");
+  csharp_keywords_.insert("break");
+  csharp_keywords_.insert("byte");
+  csharp_keywords_.insert("case");
+  csharp_keywords_.insert("catch");
+  csharp_keywords_.insert("char");
+  csharp_keywords_.insert("checked");
+  csharp_keywords_.insert("class");
+  csharp_keywords_.insert("const");
+  csharp_keywords_.insert("continue");
+  csharp_keywords_.insert("decimal");
+  csharp_keywords_.insert("default");
+  csharp_keywords_.insert("delegate");
+  csharp_keywords_.insert("do");
+  csharp_keywords_.insert("double");
+  csharp_keywords_.insert("else");
+  csharp_keywords_.insert("enum");
+  csharp_keywords_.insert("event");
+  csharp_keywords_.insert("explicit");
+  csharp_keywords_.insert("extern");
+  csharp_keywords_.insert("false");
+  csharp_keywords_.insert("finally");
+  csharp_keywords_.insert("fixed");
+  csharp_keywords_.insert("float");
+  csharp_keywords_.insert("for");
+  csharp_keywords_.insert("foreach");
+  csharp_keywords_.insert("goto");
+  csharp_keywords_.insert("if");
+  csharp_keywords_.insert("implicit");
+  csharp_keywords_.insert("in");
+  csharp_keywords_.insert("int");
+  csharp_keywords_.insert("interface");
+  csharp_keywords_.insert("internal");
+  csharp_keywords_.insert("is");
+  csharp_keywords_.insert("lock");
+  csharp_keywords_.insert("long");
+  csharp_keywords_.insert("namespace");
+  csharp_keywords_.insert("new");
+  csharp_keywords_.insert("null");
+  csharp_keywords_.insert("object");
+  csharp_keywords_.insert("operator");
+  csharp_keywords_.insert("out");
+  csharp_keywords_.insert("override");
+  csharp_keywords_.insert("params");
+  csharp_keywords_.insert("private");
+  csharp_keywords_.insert("protected");
+  csharp_keywords_.insert("public");
+  csharp_keywords_.insert("readonly");
+  csharp_keywords_.insert("ref");
+  csharp_keywords_.insert("return");
+  csharp_keywords_.insert("sbyte");
+  csharp_keywords_.insert("sealed");
+  csharp_keywords_.insert("short");
+  csharp_keywords_.insert("sizeof");
+  csharp_keywords_.insert("stackalloc");
+  csharp_keywords_.insert("static");
+  csharp_keywords_.insert("string");
+  csharp_keywords_.insert("struct");
+  csharp_keywords_.insert("switch");
+  csharp_keywords_.insert("this");
+  csharp_keywords_.insert("throw");
+  csharp_keywords_.insert("true");
+  csharp_keywords_.insert("try");
+  csharp_keywords_.insert("typeof");
+  csharp_keywords_.insert("uint");
+  csharp_keywords_.insert("ulong");
+  csharp_keywords_.insert("unchecked");
+  csharp_keywords_.insert("unsafe");
+  csharp_keywords_.insert("ushort");
+  csharp_keywords_.insert("using");
+  csharp_keywords_.insert("virtual");
+  csharp_keywords_.insert("void");
+  csharp_keywords_.insert("volatile");
+  csharp_keywords_.insert("while");
+
+  // C# contextual keywords
+  csharp_keywords_.insert("add");
+  csharp_keywords_.insert("alias");
+  csharp_keywords_.insert("ascending");
+  csharp_keywords_.insert("async");
+  csharp_keywords_.insert("await");
+  csharp_keywords_.insert("descending");
+  csharp_keywords_.insert("dynamic");
+  csharp_keywords_.insert("from");
+  csharp_keywords_.insert("get");
+  csharp_keywords_.insert("global");
+  csharp_keywords_.insert("group");
+  csharp_keywords_.insert("into");
+  csharp_keywords_.insert("join");
+  csharp_keywords_.insert("let");
+  csharp_keywords_.insert("orderby");
+  csharp_keywords_.insert("partial");
+  csharp_keywords_.insert("remove");
+  csharp_keywords_.insert("select");
+  csharp_keywords_.insert("set");
+  csharp_keywords_.insert("value");
+  csharp_keywords_.insert("var");
+  csharp_keywords_.insert("where");
+  csharp_keywords_.insert("yield");
 }
 
 bool is_base_type(t_type* type) {
