@@ -123,7 +123,7 @@ private:
   string get_cs_enum_value_name(t_enum* tenum, t_enum_value* tvalue) const;
 
   string get_c_function_signature(t_function* tfunction, string prefix, bool dllexport);
-  string get_init_service_name(t_service* tservice);
+  string get_init_service_name(t_service* tservice) const;
 
   void push_indent(int indent);
   void pop_indent(int* indent);
@@ -491,7 +491,7 @@ string t_c_api_generator::get_c_function_signature(t_function* tfunction,
   return s_function.str();
 }
 
-string t_c_api_generator::get_init_service_name(t_service* tservice) {
+string t_c_api_generator::get_init_service_name(t_service* tservice) const {
   return nspace_lc_ + camel_case_to_underscores(tservice->get_name()) + "()";
 }
 
