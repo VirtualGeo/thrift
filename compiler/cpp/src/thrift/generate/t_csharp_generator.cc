@@ -1435,7 +1435,7 @@ void t_csharp_generator::generate_service(t_service* tservice) {
 
   start_csharp_namespace(f_service_);
 
-  indent(f_service_) << "public partial class " << normalize_name(service_name_) << " {" << endl;
+  indent(f_service_) << "namespace " << normalize_name(service_name_) << " {" << endl;
   indent_up();
 
   generate_service_interface(tservice);
