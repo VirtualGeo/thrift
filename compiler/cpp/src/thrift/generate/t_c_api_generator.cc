@@ -240,7 +240,7 @@ void t_c_api_generator::generate_typedef(t_typedef* ttypedef) {
 }
 
 void t_c_api_generator::generate_enum(t_enum* tenum) {
-  const string name = nspace_ + tenum->get_name();
+  const string name = nspace_ + "_" + tenum->get_name();
 
   indent(f_header) << "enum " << name << endl;
   open_scope(f_header);
@@ -706,6 +706,8 @@ string t_c_api_generator::get_cpp_type_name(t_type* type) const {
       t_set* tset = static_cast<t_set*>(type);
       return "std::set<" + get_cpp_type_name(tset->get_elem_type()) + ">";
     }
+  } else if (type->is_enum()) {
+    return get_cpp_struct_name(type) + "::type";
   } else {
     return get_cpp_struct_name(type);
   }
