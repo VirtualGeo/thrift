@@ -25,6 +25,7 @@ string camel_case_to_underscores(string str);
 string dots_to_underscore(string str);
 
 bool is_base_type(t_type* type);
+t_type* get_underlying_type(t_type* type);
 
 class t_c_api_generator : public t_oop_generator {
 public:
@@ -230,11 +231,12 @@ void t_c_api_generator::close_csharp() {
 }
 
 void t_c_api_generator::generate_typedef(t_typedef* ttypedef) {
-  has_typedef_ = true;
-  const string name = nspace_ + "_" + ttypedef->get_symbolic();
-  make_doc(f_header, ttypedef);
-  indent(f_header) << "typedef " << get_c_type_name(ttypedef->get_type()) << " " << name << ";"
-                   << endl;
+  (void)ttypedef;
+  // has_typedef_ = true;
+  // const string name = nspace_ + "_" + ttypedef->get_symbolic();
+  // make_doc(f_header, ttypedef);
+  // indent(f_header) << "typedef " << get_c_type_name(ttypedef->get_type()) << " " << name << ";"
+  //                  << endl;
 }
 
 void t_c_api_generator::generate_enum(t_enum* tenum) {
@@ -622,6 +624,7 @@ std::ostream& t_c_api_generator::align_fn_params(std::ostream& stream, size_t le
 }
 
 string t_c_api_generator::get_c_type_name(t_type* type) const {
+  type = get_underlying_type(type);
   if (type->is_base_type()) {
     t_base_type::t_base base_type = ((t_base_type*)type)->get_base();
     switch (base_type) {
@@ -666,6 +669,7 @@ string t_c_api_generator::get_c_type_name(t_type* type) const {
 }
 
 string t_c_api_generator::get_cpp_type_name(t_type* type) const {
+  type = get_underlying_type(type);
   if (type->is_base_type()) {
     t_base_type::t_base base_type = ((t_base_type*)type)->get_base();
     switch (base_type) {
@@ -849,16 +853,16 @@ void t_c_api_generator::init_csharp_keywords() {
 }
 
 bool is_base_type(t_type* type) {
-  if (type->is_base_type()) {
-    return true;
+  t_type* t = get_underlying_type(type);
+  return t->is_base_type();
   }
 
-  if (type->is_typedef()) {
-    t_typedef* t = (t_typedef*)type;
-    return is_base_type(t->get_type());
+t_type* get_underlying_type(t_type* type) {
+  t_type* result = type;
+  while (result->is_typedef()) {
+    result = ((t_typedef*)result)->get_type();
   }
-
-  return false;
+  return result;
 }
 
 // Helpers
