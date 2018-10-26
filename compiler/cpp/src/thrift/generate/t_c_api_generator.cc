@@ -17,7 +17,7 @@ using std::set;
 using std::string;
 using std::vector;
 
-constexpr const char* endl = "\n";
+static const char* endl = "\n";
 
 string to_upper_case(string str);
 string to_lower_case(string str);
@@ -111,10 +111,10 @@ private:
   void generate_service_source(t_service* tservice);
   void generate_service_csharp(t_service* tservice);
 
-  void convert_c_type_to_cpp(t_type* type, string c_name, string cpp_name);
-  void convert_cpp_type_to_c(t_type* type, string cpp_name, string c_name, bool first_level);
-  void convert_cs_type_to_c(t_type* type, string cs_name, string c_name);
-  void convert_c_type_to_cs(t_type* type, string c_name, string cs_name);
+  void convert_type_c_to_cpp(t_type* type, string c_name, string cpp_name);
+  void convert_type_cpp_to_c(t_type* type, string cpp_name, string c_name, bool first_level);
+  void convert_type_cs_to_c(t_type* type, string cs_name, string c_name);
+  void convert_type_c_to_cs(t_type* type, string c_name, string cs_name);
 
   string get_c_type_name(t_type* type) const;
   string get_cpp_type_name(t_type* type) const;
@@ -435,7 +435,7 @@ void t_c_api_generator::generate_service_source(t_service* tservice) {
 
       indent(f_source) << get_cpp_type_name(arg->get_type()) << " " << cpp_name << ";" << endl;
 
-      convert_c_type_to_cpp(arg->get_type(), c_name, cpp_name);
+      convert_type_c_to_cpp(arg->get_type(), c_name, cpp_name);
       arg_array.push_back(cpp_name);
     }
 
@@ -490,7 +490,7 @@ void t_c_api_generator::generate_service_source(t_service* tservice) {
                          << "));" << endl;
       }
 
-      convert_cpp_type_to_c(return_type, "cpp_result", "result", true);
+      convert_type_cpp_to_c(return_type, "cpp_result", "result", true);
     }
 
     if (has_return_type) {
@@ -511,7 +511,10 @@ void t_c_api_generator::generate_service_csharp(t_service* tservice) {
 
   indent(f_csharp) << "public class DirectClient : ISync" << endl;
   open_scope(f_csharp);
-  f_csharp << "#if DEBUG" << endl;
+  f_csharp << "#if RELWITHDEBINFO" << endl;
+  indent(f_csharp) << "private const String C_API_DLL = \"" << tservice->get_name() << ".rd.dll\";"
+                   << endl;
+  f_csharp << "#elif DEBUG" << endl;
   indent(f_csharp) << "private const String C_API_DLL = \"" << tservice->get_name() << ".d.dll\";"
                    << endl;
   f_csharp << "#else" << endl;
@@ -639,7 +642,7 @@ void t_c_api_generator::generate_service_csharp(t_service* tservice) {
 
       indent(f_csharp) << get_cs_to_c_type_name(arg->get_type()) << " " << c_name << ";" << endl;
 
-      convert_cs_type_to_c(arg->get_type(), cs_name, c_name);
+      convert_type_cs_to_c(arg->get_type(), cs_name, c_name);
 
       f_csharp << endl;
     }
@@ -675,7 +678,7 @@ void t_c_api_generator::generate_service_csharp(t_service* tservice) {
 
     if (has_return_type) {
       indent(f_csharp) << get_cs_type_name(return_type) << " result;" << endl;
-      convert_c_type_to_cs(return_type, "c_result", "result");
+      convert_type_c_to_cs(return_type, "c_result", "result");
 
       f_csharp << endl;
 
@@ -828,7 +831,9 @@ string t_c_api_generator::get_cs_return_type(t_type* type,
   return result;
 }
 
-void t_c_api_generator::convert_c_type_to_cpp(t_type* type, string c_name, string cpp_name) {
+void t_c_api_generator::convert_type_c_to_cpp(t_type* type, string c_name, string cpp_name) {
+  type = get_underlying_type(type);
+
   if (is_base_type(type)) {
     indent(f_source) << cpp_name << " = ";
     if (type->is_string()) {
@@ -855,7 +860,7 @@ void t_c_api_generator::convert_c_type_to_cpp(t_type* type, string c_name, strin
     f_source << endl;
   } else if (type->is_container()) {
     // indent(f_source) << cpp_name << " = " << c_name << ";" << endl;
-    assert(false);
+    // assert(false);
   } else if (type->is_struct()) {
     for (auto arg : ((t_struct*)type)->get_sorted_members()) {
       const string c_param_name = c_name + "." + arg->get_name();
@@ -864,23 +869,25 @@ void t_c_api_generator::convert_c_type_to_cpp(t_type* type, string c_name, strin
       f_source << endl;
       indent(f_source) << get_cpp_type_name(arg->get_type()) << " " << cpp_param_name << ";"
                        << endl;
-      convert_c_type_to_cpp(arg->get_type(), c_param_name, cpp_param_name);
+      convert_type_c_to_cpp(arg->get_type(), c_param_name, cpp_param_name);
       indent(f_source) << cpp_name << ".__set_" << arg->get_name() << "(" << cpp_param_name << ");"
                        << endl
                        << endl;
     }
   } else {
-    std::cerr << get_c_type_name(type) << endl;
+    std::cerr << c_name << " " << cpp_name << " " << get_c_type_name(type) << endl;
     assert(false);
   }
 
   f_source << endl;
 }
 
-void t_c_api_generator::convert_cpp_type_to_c(t_type* type,
+void t_c_api_generator::convert_type_cpp_to_c(t_type* type,
                                               string cpp_name,
                                               string c_name,
                                               bool first_level) {
+  type = get_underlying_type(type);
+
   if (type->is_string()) {
     // FIXME(CMA): This will leak
     indent(f_source) << c_name << " = (char*)malloc(" << cpp_name << ".size() + 1);" << endl;
@@ -888,8 +895,7 @@ void t_c_api_generator::convert_cpp_type_to_c(t_type* type,
                      << ".size());" << endl;
     indent(f_source) << c_name << "[" << cpp_name << ".size()] = '\\0';";
   } else if (is_base_type(type)) {
-    indent(f_source) << dots_to_underscore(c_name) << " = (" << get_c_type_name(type) << ")"
-                     << cpp_name << ";" << endl;
+    indent(f_source) << c_name << " = (" << get_c_type_name(type) << ")" << cpp_name << ";" << endl;
   } else if (type->is_enum()) {
     t_enum* tenum = (t_enum*)type;
     auto consts = tenum->get_constants();
@@ -907,15 +913,15 @@ void t_c_api_generator::convert_cpp_type_to_c(t_type* type,
     indent(f_source) << "}";
     f_source << endl;
   } else if (type->is_container()) {
-    // indent(f_source) << c_name << " = " << cpp_name << ";" << endl;
-    assert(false);
+    indent(f_source) << c_name << " = 0;" << endl;
+    // assert(false);
   } else if (type->is_struct()) {
     for (auto arg : ((t_struct*)type)->get_sorted_members()) {
       const string c_param_name = c_name + (first_level ? "->" : ".") + arg->get_name();
       const string cpp_param_name = cpp_name + "." + arg->get_name();
 
       f_source << endl;
-      convert_cpp_type_to_c(arg->get_type(), cpp_param_name, c_param_name, false);
+      convert_type_cpp_to_c(arg->get_type(), cpp_param_name, c_param_name, false);
     }
   } else {
     std::cerr << get_c_type_name(type) << endl;
@@ -925,7 +931,7 @@ void t_c_api_generator::convert_cpp_type_to_c(t_type* type,
   f_source << endl;
 }
 
-void t_c_api_generator::convert_cs_type_to_c(t_type* type, string cs_name, string c_name) {
+void t_c_api_generator::convert_type_cs_to_c(t_type* type, string cs_name, string c_name) {
   type = get_underlying_type(type);
 
   if (is_base_type(type)) {
@@ -953,7 +959,7 @@ void t_c_api_generator::convert_cs_type_to_c(t_type* type, string cs_name, strin
     f_csharp << endl;
   } else if (type->is_container()) {
     indent(f_csharp) << c_name << " = 0;" << endl;
-    assert(false);
+    // assert(false);
   } else if (type->is_struct()) {
     for (auto arg : ((t_struct*)type)->get_sorted_members()) {
       string cs_arg_name = arg->get_name();
@@ -962,7 +968,7 @@ void t_c_api_generator::convert_cs_type_to_c(t_type* type, string cs_name, strin
       const string cs_param_name = cs_name + "." + cs_arg_name;
       const string c_param_name = c_name + "." + arg->get_name();
 
-      convert_cs_type_to_c(arg->get_type(), cs_param_name, c_param_name);
+      convert_type_cs_to_c(arg->get_type(), cs_param_name, c_param_name);
     }
     f_csharp << endl;
   } else {
@@ -971,7 +977,9 @@ void t_c_api_generator::convert_cs_type_to_c(t_type* type, string cs_name, strin
   }
 }
 
-void t_c_api_generator::convert_c_type_to_cs(t_type* type, string c_name, string cs_name) {
+void t_c_api_generator::convert_type_c_to_cs(t_type* type, string c_name, string cs_name) {
+  type = get_underlying_type(type);
+
   if (is_base_type(type)) {
     indent(f_csharp) << cs_name << " = " << c_name << ";" << endl;
   } else if (type->is_enum()) {
@@ -994,8 +1002,8 @@ void t_c_api_generator::convert_c_type_to_cs(t_type* type, string c_name, string
     indent(f_csharp) << "}";
     f_csharp << endl;
   } else if (type->is_container()) {
-    assert(false);
-    // indent(f_csharp) << cs_name << " = " << c_name << ";" << endl;
+    // assert(false);
+    // indent(f_csharp) << cs_name << " = " << ";" << endl;
   } else if (type->is_struct()) {
     indent(f_csharp) << cs_name << " = new " << get_cs_type_name(type) << "();" << endl;
     for (auto arg : ((t_struct*)type)->get_sorted_members()) {
@@ -1004,7 +1012,7 @@ void t_c_api_generator::convert_c_type_to_cs(t_type* type, string c_name, string
 
       string c_param_name = c_name + "." + arg->get_name();
       string cs_param_name = cs_name + "." + cs_arg_name;
-      convert_c_type_to_cs(arg->get_type(), c_param_name, cs_param_name);
+      convert_type_c_to_cs(arg->get_type(), c_param_name, cs_param_name);
     }
   } else {
     std::cerr << type->get_name() << std::endl;
@@ -1116,19 +1124,16 @@ string t_c_api_generator::get_cpp_type_name(t_type* type) const {
     // TODO
     if (type->is_list()) {
       t_list* tlist = static_cast<t_list*>(type);
-      return "int";
       return "std::vector<" + get_cpp_type_name(tlist->get_elem_type()) + ">";
     }
     if (type->is_map()) {
       t_map* tmap = static_cast<t_map*>(type);
       string key_string = get_cpp_type_name(tmap->get_key_type());
       string val_string = get_cpp_type_name(tmap->get_val_type());
-      return "int";
       return "std::map<" + key_string + ", " + val_string + ">";
     }
     if (type->is_set()) {
       t_set* tset = static_cast<t_set*>(type);
-      return "int";
       return "std::set<" + get_cpp_type_name(tset->get_elem_type()) + ">";
     }
   } else if (type->is_enum()) {
