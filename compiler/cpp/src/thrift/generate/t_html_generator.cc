@@ -58,11 +58,17 @@ public:
 
     standalone_ = false;
     unsafe_ = false;
+    nohead_ = false;
+
     for( iter = parsed_options.begin(); iter != parsed_options.end(); ++iter) {
       if( iter->first.compare("standalone") == 0) {
         standalone_ = true;
       } else if( iter->first.compare("noescape") == 0) {
         unsafe_ = true;
+      } else if (iter->first.compare("css") == 0) {
+        csspath_ = iter->second;
+      } else if (iter->first.compare("nohead") == 0) {
+        nohead_ = true;
       } else {
         throw "unknown option html:" + iter->first;
       }
@@ -84,6 +90,7 @@ public:
 
   void generate_program();
   void generate_program_toc();
+  void generate_program_toc(t_program* tprog);
   void generate_program_toc_row(t_program* tprog);
   void generate_program_toc_rows(t_program* tprog, std::vector<t_program*>& finished);
   void generate_index();
@@ -118,19 +125,112 @@ private:
   std::string current_file_;
   input_type input_type_;
   std::map<std::string, int> allowed_markup;
+  std::string csspath_;
   bool standalone_;
   bool unsafe_;
+  bool nohead_;
 };
 
 /**
  * Emits the Table of Contents links at the top of the module's page
  */
 void t_html_generator::generate_program_toc() {
-  f_out_ << "<table class=\"table-bordered table-striped "
+  
+ /* f_out_ << "<table class=\"table-bordered table-striped "
             "table-condensed\"><thead><th>Module</th><th>Services</th>"
          << "<th>Data types</th><th>Constants</th></thead>" << endl;
   generate_program_toc_row(program_);
-  f_out_ << "</table>" << endl;
+  f_out_ << "</table>" << endl;*/
+
+  generate_program_toc(program_);
+}
+
+void t_html_generator::generate_program_toc(t_program* tprog) {
+  string fname = tprog->get_name() + ".html";
+  if (!tprog->get_services().empty()) {
+    vector<t_service*> services = tprog->get_services();
+    vector<t_service*>::iterator sv_iter;
+    f_out_ << "<h2>Services</h2>" << endl;
+    for (sv_iter = services.begin(); sv_iter != services.end(); ++sv_iter) {
+      string name = get_service_name(*sv_iter);
+      f_out_ << "<h3>Service: <a href=\"" << make_file_link(fname) << "#Svc_" << name << "\">" << name
+             << "</a></h3>" << endl;
+      f_out_ << "<ul class=\"toc\">" << endl;
+      map<string, string> fn_html;
+      vector<t_function*> functions = (*sv_iter)->get_functions();
+      vector<t_function*>::iterator fn_iter;
+      for (fn_iter = functions.begin(); fn_iter != functions.end(); ++fn_iter) {
+        string fn_name = (*fn_iter)->get_name();
+        string html = "<li>Function: <a href=\"" + make_file_link(fname) + "#Fn_" + name + "_" + fn_name
+                      + "\">" + fn_name + "</a></li>";
+        fn_html.insert(pair<string, string>(fn_name, html));
+      }
+      for (map<string, string>::iterator html_iter = fn_html.begin(); html_iter != fn_html.end();
+           html_iter++) {
+        f_out_ << html_iter->second << endl;
+      }
+      f_out_ << "</ul>" << endl;
+    }
+  }
+  map<string, string> data_types;
+  if (!tprog->get_enums().empty()) {
+    vector<t_enum*> enums = tprog->get_enums();
+    vector<t_enum*>::iterator en_iter;
+    for (en_iter = enums.begin(); en_iter != enums.end(); ++en_iter) {
+      string name = (*en_iter)->get_name();
+      // f_out_ << "<a href=\"" << make_file_link(fname) << "#Enum_" << name << "\">" << name
+      // <<  "</a><br/>" << endl;
+      string html = "Enum: <a href=\"" + make_file_link(fname) + "#Enum_" + name + "\">" + name + "</a>";
+      data_types.insert(pair<string, string>(name, html));
+    }
+  }
+  if (!tprog->get_typedefs().empty()) {
+    vector<t_typedef*> typedefs = tprog->get_typedefs();
+    vector<t_typedef*>::iterator td_iter;
+    for (td_iter = typedefs.begin(); td_iter != typedefs.end(); ++td_iter) {
+      string name = (*td_iter)->get_symbolic();
+      // f_out_ << "<a href=\"" << make_file_link(fname) << "#Typedef_" << name << "\">" << name
+      // << "</a><br/>" << endl;
+      string html
+          = "Typedef: <a href=\"" + make_file_link(fname) + "#Typedef_" + name + "\">" + name + "</a>";
+      data_types.insert(pair<string, string>(name, html));
+    }
+  }
+  if (!tprog->get_objects().empty()) {
+    vector<t_struct*> objects = tprog->get_objects();
+    vector<t_struct*>::iterator o_iter;
+    for (o_iter = objects.begin(); o_iter != objects.end(); ++o_iter) {
+      string name = (*o_iter)->get_name();
+      // f_out_ << "<a href=\"" << make_file_link(fname) << "#Struct_" << name << "\">" << name
+      //<< "</a><br/>" << endl;
+      string html
+          = "Struct: <a href=\"" + make_file_link(fname) + "#Struct_" + name + "\">" + name + "</a>";
+      data_types.insert(pair<string, string>(name, html));
+    }
+  }
+  f_out_ << "<h2>Data types</h2><ul class=\"toc\">" << endl;
+  for (map<string, string>::iterator dt_iter = data_types.begin(); dt_iter != data_types.end();
+       dt_iter++) {
+    f_out_ << "<li>" << dt_iter->second << "</li>" << endl;
+  }
+  f_out_ << "</ul>" << endl;
+
+  if (!tprog->get_consts().empty()) {
+    f_out_ << "<h2>Constants</h2><ul class=\"toc\">" << endl;
+    map<string, string> const_html;
+    vector<t_const*> consts = tprog->get_consts();
+    vector<t_const*>::iterator con_iter;
+    for (con_iter = consts.begin(); con_iter != consts.end(); ++con_iter) {
+      string name = (*con_iter)->get_name();
+      string html = "<code><a href=\"" + make_file_link(fname) + "#Const_" + name + "\">" + name
+                    + "</a></code>";
+      const_html.insert(pair<string, string>(name, html));
+    }
+    for (map<string, string>::iterator con_iter = const_html.begin(); con_iter != const_html.end();
+         con_iter++) {
+      f_out_ << "<li>" << con_iter->second << "</li>" << endl;
+    }
+  }
 }
 
 /**
@@ -146,7 +246,8 @@ void t_html_generator::generate_program_toc_rows(t_program* tprog,
     }
   }
   finished.push_back(tprog);
-  generate_program_toc_row(tprog);
+ // generate_program_toc_row(tprog);
+  generate_program_toc(tprog);
   vector<t_program*> includes = tprog->get_includes();
   for (vector<t_program*>::iterator iter = includes.begin(); iter != includes.end(); iter++) {
     generate_program_toc_rows(*iter, finished);
@@ -253,16 +354,21 @@ void t_html_generator::generate_program() {
   current_file_ = program_->get_name() + ".html";
   string fname = get_out_dir() + current_file_;
   f_out_.open(fname.c_str());
-  f_out_ << "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Strict//EN\"" << endl;
-  f_out_ << "    \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd\">" << endl;
-  f_out_ << "<html xmlns=\"http://www.w3.org/1999/xhtml\">" << endl;
-  f_out_ << "<head>" << endl;
-  f_out_ << "<meta http-equiv=\"Content-Type\" content=\"text/html;charset=utf-8\" />" << endl;
-  generate_style_tag();
-  f_out_ << "<title>Thrift module: " << program_->get_name() << "</title></head><body>" << endl
-         << "<div class=\"container-fluid\">" << endl
-         << "<h1>Thrift module: " << program_->get_name() << "</h1>" << endl;
 
+  if (!nohead_) {
+	  f_out_ << "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Strict//EN\"" << endl;
+	  f_out_ << "    \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd\">" << endl;
+	  f_out_ << "<html xmlns=\"http://www.w3.org/1999/xhtml\">" << endl;
+	  f_out_ << "<head>" << endl;
+	  f_out_ << "<meta http-equiv=\"Content-Type\" content=\"text/html;charset=utf-8\" />" << endl;
+	  generate_style_tag();
+	  f_out_ << "<title>Thrift module: " << program_->get_name() << "</title></head><body>" << endl;
+  }
+
+  f_out_ << "<h1>Thrift module: " << program_->get_name() << "</h1>" << endl;
+  f_out_ << "<div class=\"contents\">" << endl;
+
+  f_out_ << "<h2>Overview</h2>" << endl;
   print_doc(program_);
 
   generate_program_toc();
@@ -321,12 +427,16 @@ void t_html_generator::generate_program() {
     }
   }
 
-  f_out_ << "</div></body></html>" << endl;
+  f_out_ << "</div>";
+  if (!nohead_) {
+    f_out_ << "</body></ html> " << endl;
+  }
   f_out_.close();
 
   generate_index();
   generate_css();
-}
+
+ }
 
 /**
  * Emits the index.html file for the recursive set of Thrift programs
@@ -335,22 +445,46 @@ void t_html_generator::generate_index() {
   current_file_ = "index.html";
   string index_fname = get_out_dir() + current_file_;
   f_out_.open(index_fname.c_str());
-  f_out_ << "<html><head>" << endl;
-  generate_style_tag();
-  f_out_ << "<title>All Thrift declarations</title></head><body>" << endl
-         << "<div class=\"container-fluid\">" << endl << "<h1>All Thrift declarations</h1>" << endl;
-  f_out_ << "<table class=\"table-bordered table-striped "
+  if (!nohead_) {
+    f_out_ << "<html><head>" << endl;
+    generate_style_tag();
+    f_out_ << "<title>All Thrift declarations</title></head><body>" << endl;
+  }
+  f_out_ << "<h1>All Thrift declarations</h1>" << endl;
+  f_out_ << "<div class=\"contents\">" << endl;
+  /*f_out_ << "<table class=\"table-bordered table-striped "
             "table-condensed\"><thead><th>Module</th><th>Services</th><th>Data types</th>"
-         << "<th>Constants</th></thead>" << endl;
+         << "<th>Constants</th></thead>" << endl;*/
   vector<t_program*> programs;
   generate_program_toc_rows(program_, programs);
-  f_out_ << "</table>" << endl;
-  f_out_ << "</div></body></html>" << endl;
+ // f_out_ << "</table>" << endl;
+  f_out_ << "</div>" << endl;
+  if (!nohead_) {
+    f_out_ << "</body></html>" << endl;
+  }
   f_out_.close();
 }
 
 void t_html_generator::generate_css() {
-  if (!standalone_) {
+  if (!csspath_.empty()) {
+
+    std::ifstream f_in(csspath_);
+    f_in.ignore(std::numeric_limits<std::streamsize>::max());
+    std::streamsize length = f_in.gcount();
+    f_in.clear(); //  Since ignore will have set eof.    char* content = new char[size];
+    f_in.seekg(0, std::ios::beg);
+    char* content = new char[length];
+    f_in.read(content, length);
+
+    current_file_ = "style.css";
+    string css_fname = get_out_dir() + current_file_;
+    f_out_.open(css_fname.c_str());
+    f_out_.write(content, length);
+    f_out_.close();
+
+	delete[] content;
+
+  } else if (!standalone_) {
     current_file_ = "style.css";
     string css_fname = get_out_dir() + current_file_;
     f_out_.open(css_fname.c_str());
@@ -405,7 +539,7 @@ void t_html_generator::print_doc(t_doc* tdoc) {
     if (unsafe_) {
       f_out_ << tdoc->get_doc() << "<br/>";
     } else {
-      f_out_ << "<pre>" << escape_html(tdoc->get_doc()) << "</pre><br/>";
+      f_out_ << "<pre>" << escape_html(tdoc->get_doc()) << "</pre>";
     }
   }
 }
@@ -1034,9 +1168,12 @@ void t_html_generator::generate_service(t_service* tservice) {
   for (; fn_iter != functions.end(); fn_iter++) {
     string fn_name = (*fn_iter)->get_name();
     f_out_ << "<div class=\"definition\">";
+
+	t_doc* tdoc = *fn_iter;
+
+    f_out_ << "<pre class=\"function_signature\">";
     f_out_ << "<h4 id=\"Fn_" << service_name_ << "_" << fn_name << "\">Function: " << service_name_
            << "." << fn_name << "</h4>" << endl;
-    f_out_ << "<pre>";
     std::string::size_type offset = print_type((*fn_iter)->get_returntype());
     bool first = true;
     f_out_ << " " << fn_name << "(";
@@ -1074,8 +1211,12 @@ void t_html_generator::generate_service(t_service* tservice) {
       f_out_ << endl;
     }
     f_out_ << "</pre>";
-    print_doc(*fn_iter);
+
+	if (tdoc->has_doc()) {
+        f_out_ << "<pre class=\"function_doc\">" << escape_html(tdoc->get_doc()) << "</pre>";
+	}
     print_fn_args_doc(*fn_iter);
+
     f_out_ << "</div>";
   }
 }
@@ -1083,6 +1224,8 @@ void t_html_generator::generate_service(t_service* tservice) {
 THRIFT_REGISTER_GENERATOR(
     html,
     "HTML",
+    "    nohead:          Do not generate a HMTL header, just the contents.\n"
+    "    css=PATH:        Use the given css.\n"
     "    standalone:      Self-contained mode, includes all CSS in the HTML files.\n"
     "                     Generates no style.css file, but HTML files will be larger.\n"
     "    noescape:        Do not escape html in doc text.\n")
