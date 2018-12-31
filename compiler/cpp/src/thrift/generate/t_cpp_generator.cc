@@ -461,6 +461,10 @@ void t_cpp_generator::init_generator() {
   f_types_ << endl;
 
   // Include the types file
+  f_types_impl_ << "#if defined(_WINDOWS)" << endl
+	            << "#   define NOMINMAX" << endl
+	            << "#endif" << endl << endl;
+  
   f_types_impl_ << "#include \"" << get_include_prefix(*get_program()) << program_name_
                 << "_types.h\"" << endl
                 << endl;
@@ -676,6 +680,10 @@ void t_cpp_generator::generate_consts(std::vector<t_const*> consts) {
            << endl
            << ns_open_ << endl
            << endl;
+
+  f_consts_impl << "#if defined(_WINDOWS)" << endl
+	            << "#   define NOMINMAX" << endl
+	            << "#endif" << endl << endl;
 
   f_consts_impl << "#include \"" << get_include_prefix(*get_program()) << program_name_
                 << "_constants.h\"" << endl
@@ -1801,6 +1809,9 @@ void t_cpp_generator::generate_service(t_service* tservice) {
   string f_service_name = get_out_dir() + svcname + ".cpp";
   f_service_.open(f_service_name.c_str());
   f_service_ << autogen_comment();
+  f_service_ << "#if defined(_WINDOWS)" << endl
+	         << "#   define NOMINMAX" << endl
+	         << "#endif" << endl << endl;
   f_service_ << "#include \"" << get_include_prefix(*get_program()) << svcname << ".h\"" << endl;
   if (gen_cob_style_) {
     f_service_ << "#include \"thrift/async/TAsyncChannel.h\"" << endl;
