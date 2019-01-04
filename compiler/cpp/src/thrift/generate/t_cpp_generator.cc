@@ -464,7 +464,7 @@ void t_cpp_generator::init_generator() {
   f_types_impl_ << "#if defined(_WINDOWS)" << endl
 	            << "#   define NOMINMAX" << endl
 	            << "#endif" << endl << endl;
-  
+
   f_types_impl_ << "#include \"" << get_include_prefix(*get_program()) << program_name_
                 << "_types.h\"" << endl
                 << endl;
@@ -572,7 +572,11 @@ void t_cpp_generator::generate_enum(t_enum* tenum) {
   }
   f_types_ << indent() << "enum " << enum_name;
 
-  generate_enum_constant_list(f_types_, constants, "", "", true);
+  std::string prefix = "";
+  if (gen_pure_enums_) {
+    prefix = tenum->get_name() + "_";
+  }
+  generate_enum_constant_list(f_types_, constants, prefix.c_str(), "", true);
 
   if (!gen_pure_enums_) {
     indent_down();
@@ -584,7 +588,6 @@ void t_cpp_generator::generate_enum(t_enum* tenum) {
   /**
      Generate a character array of enum names for debugging purposes.
   */
-  std::string prefix = "";
   if (!gen_pure_enums_) {
     prefix = tenum->get_name() + "::";
   }
