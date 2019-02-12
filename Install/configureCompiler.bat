@@ -1,53 +1,62 @@
 @echo off
 
-if %CURRENT_COMPILER% == Win32VC12 (
+IF %CURRENT_COMPILER% == Win32VC12 GOTO :w32vc12
+IF %CURRENT_COMPILER% == WPF32VC12 GOTO :w32vc12
+
+IF %CURRENT_COMPILER% == Win64VC12 GOTO :w64vc12
+IF %CURRENT_COMPILER% == WPF64VC12 GOTO :w64vc12
+
+IF %CURRENT_COMPILER% == Win32VC14 GOTO :w32vc14
+IF %CURRENT_COMPILER% == Win64VC14 GOTO :w64vc14
+IF %CURRENT_COMPILER% == Win32VC15 GOTO :w32vc15
+IF %CURRENT_COMPILER% == Win64VC15 GOTO :w64vc15
+
+goto :unknown
+
+
+:w32vc12
 	set GENERATOR="Visual Studio 12 2013"
 	set CS_CONFIGURATION=VC12_
 	set CS_PLATFORM=x86
 	set ZLIB_SUFFIX=vc12
 	goto :done
-)
 
-if %CURRENT_COMPILER% == Win64VC12 (
+:w64vc12
 	set GENERATOR="Visual Studio 12 2013 Win64"
 	set CS_CONFIGURATION=VC12_
 	set CS_PLATFORM=x64
 	set ZLIB_SUFFIX=vc12.x64
 	goto :done
-)
 
-if %CURRENT_COMPILER% == Win32VC14 (
+:w32vc14
 	set GENERATOR="Visual Studio 14 2015"
 	set CS_CONFIGURATION=VC14_
 	set CS_PLATFORM=x86
 	set ZLIB_SUFFIX=vc14
 	goto :done
-)
 
-if %CURRENT_COMPILER% == Win64VC14 (
+:w64vc14
 	set GENERATOR="Visual Studio 14 2015 Win64"
 	set CS_CONFIGURATION=VC14_
 	set CS_PLATFORM=x64
 	set ZLIB_SUFFIX=vc14.x64
 	goto :done
-)
 
-if %CURRENT_COMPILER% == Win32VC15 (
+:w32vc15
 	set GENERATOR="Visual Studio 15 2017"
 	set CS_CONFIGURATION=VC14_
 	set CS_PLATFORM=x86
 	set ZLIB_SUFFIX=vc14
 	goto :done
-)
 
-if %CURRENT_COMPILER% == Win64VC15 (
+:w64vc15
 	set GENERATOR="Visual Studio 15 2017 Win64"
 	set CS_CONFIGURATION=VC14_
 	set CS_PLATFORM=x64
 	set ZLIB_SUFFIX=vc14.x64
 	goto :done
-)
 
+:unknown
 echo Compiler %CURRENT_COMPILER% is unknown or not supported.
 exit /B 1
 
