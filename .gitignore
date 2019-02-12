@@ -386,3 +386,5 @@ project.lock.json
 
 /Generated_**
 /External_**
+
+lib/java/bin/
