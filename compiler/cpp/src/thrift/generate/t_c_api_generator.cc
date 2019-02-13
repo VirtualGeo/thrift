@@ -19,13 +19,13 @@ using std::vector;
 
 static const char* endl = "\n";
 
-string to_upper_case(string str);
-string to_lower_case(string str);
-string camel_case_to_underscores(string str);
-string dots_to_underscore(string str);
+inline string to_upper_case(string str);
+inline string to_lower_case(string str);
+inline string camel_case_to_underscores(string str);
+inline string dots_to_underscore(string str);
 
-bool is_base_type(t_type* type);
-t_type* get_underlying_type(t_type* type);
+inline bool is_base_type(t_type* type);
+inline t_type* get_underlying_type(t_type* type);
 
 class t_c_api_generator : public t_oop_generator {
 public:
@@ -1319,12 +1319,12 @@ void t_c_api_generator::init_csharp_keywords() {
 }
 
 // Helpers
-bool is_base_type(t_type* type) {
+inline bool is_base_type(t_type* type) {
   t_type* t = get_underlying_type(type);
   return t->is_base_type();
 }
 
-t_type* get_underlying_type(t_type* type) {
+inline t_type* get_underlying_type(t_type* type) {
   t_type* result = type;
   while (result->is_typedef()) {
     result = ((t_typedef*)result)->get_type();
@@ -1332,20 +1332,20 @@ t_type* get_underlying_type(t_type* type) {
   return result;
 }
 
-string to_upper_case(string str) {
+inline string to_upper_case(string str) {
   string s(str);
   std::transform(s.begin(), s.end(), s.begin(), ::toupper);
   return s;
 }
 
-string to_lower_case(string str) {
+inline string to_lower_case(string str) {
   string s(str);
   std::transform(s.begin(), s.end(), s.begin(), ::tolower);
   return s;
 }
 
 // Transform ACamelCase string to a_camel_case one
-string camel_case_to_underscores(string str) {
+inline string camel_case_to_underscores(string str) {
   string result;
   result += tolower(str[0]);
   for (size_t i = 1; i < str.size(); ++i) {
@@ -1358,7 +1358,7 @@ string camel_case_to_underscores(string str) {
   return result;
 }
 
-string dots_to_underscore(string str) {
+inline string dots_to_underscore(string str) {
   string result = str;
   for (auto&& c : result) {
     if (c == '.') {

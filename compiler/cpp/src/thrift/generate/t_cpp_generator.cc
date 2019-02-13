@@ -462,8 +462,9 @@ void t_cpp_generator::init_generator() {
 
   // Include the types file
   f_types_impl_ << "#if defined(_WINDOWS)" << endl
-	            << "#   define NOMINMAX" << endl
-	            << "#endif" << endl << endl;
+                << "#   define NOMINMAX" << endl
+                << "#endif" << endl
+                << endl;
 
   f_types_impl_ << "#include \"" << get_include_prefix(*get_program()) << program_name_
                 << "_types.h\"" << endl
@@ -685,8 +686,9 @@ void t_cpp_generator::generate_consts(std::vector<t_const*> consts) {
            << endl;
 
   f_consts_impl << "#if defined(_WINDOWS)" << endl
-	            << "#   define NOMINMAX" << endl
-	            << "#endif" << endl << endl;
+                << "#   define NOMINMAX" << endl
+                << "#endif" << endl
+                << endl;
 
   f_consts_impl << "#include \"" << get_include_prefix(*get_program()) << program_name_
                 << "_constants.h\"" << endl
@@ -1039,9 +1041,12 @@ void t_cpp_generator::generate_struct_declaration(ostream& out,
 
   // Isset struct has boolean fields, but only for non-required fields.
   bool has_nonrequired_fields = false;
+  bool has_required_fields = false;
   for (m_iter = members.begin(); m_iter != members.end(); ++m_iter) {
     if ((*m_iter)->get_req() != t_field::T_REQUIRED)
       has_nonrequired_fields = true;
+    else
+      has_required_fields = true;
   }
 
   if (has_nonrequired_fields && (!pointers || read)) {
@@ -1143,6 +1148,53 @@ void t_cpp_generator::generate_struct_declaration(ostream& out,
       }
     }
     scope_down(out);
+  }
+
+  // If there are required fields, make a constructor with them
+  if (has_required_fields) {
+    indent(out) << tstruct->get_name() << "(";
+    bool first = true;
+    for (m_iter = members.begin(); m_iter != members.end(); ++m_iter) {
+      if ((*m_iter)->get_req() == t_field::T_REQUIRED) {
+        if (first)
+          first = false;
+        else
+          out << ", ";
+        out << (*m_iter)->get_type()->get_name() << " _" << (*m_iter)->get_name();
+      }
+    }
+    out << ")" << endl;
+
+    indent_up();
+
+    first = true;
+    for (m_iter = members.begin(); m_iter != members.end(); ++m_iter) {
+      string dval = "";
+
+      t_type* t = get_true_type((*m_iter)->get_type());
+      if ((*m_iter)->get_req() == t_field::T_REQUIRED) {
+        dval = "_" + (*m_iter)->get_name();
+      } else if (t->is_base_type() || t->is_enum() || is_reference(*m_iter)) {
+        if (t->is_enum()) {
+          dval += "(" + type_name(t) + ")";
+        }
+        dval += (t->is_string() || is_reference(*m_iter)) ? "" : "0";
+        t_const_value* cv = (*m_iter)->get_value();
+        if (cv != NULL) {
+          dval = render_const_value(out, (*m_iter)->get_name(), t, cv);
+        }
+      }
+
+      if (first) {
+        first = false;
+        indent(out) << ": " << (*m_iter)->get_name() << "(" << dval << ")" << endl;
+      } else {
+        indent(out) << ", " << (*m_iter)->get_name() << "(" << dval << ")" << endl;
+      }
+    }
+
+    indent_down();
+    indent(out) << "{}";
   }
 
   if (tstruct->annotations_.find("final") == tstruct->annotations_.end()) {
@@ -1813,8 +1865,9 @@ void t_cpp_generator::generate_service(t_service* tservice) {
   f_service_.open(f_service_name.c_str());
   f_service_ << autogen_comment();
   f_service_ << "#if defined(_WINDOWS)" << endl
-	         << "#   define NOMINMAX" << endl
-	         << "#endif" << endl << endl;
+             << "#   define NOMINMAX" << endl
+             << "#endif" << endl
+             << endl;
   f_service_ << "#include \"" << get_include_prefix(*get_program()) << svcname << ".h\"" << endl;
   if (gen_cob_style_) {
     f_service_ << "#include \"thrift/async/TAsyncChannel.h\"" << endl;

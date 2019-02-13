@@ -21,7 +21,7 @@ goto :unknown
 	set ZLIB_SUFFIX=vc12
 	goto :done
 
-w64vc12:
+:w64vc12
 	set GENERATOR="Visual Studio 12 2013 Win64"
 	set CS_CONFIGURATION=VC12_
 	set CS_PLATFORM=x64

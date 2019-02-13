@@ -42,10 +42,10 @@ using std::vector;
 static const string endl = "\n"; // avoid ostream << std::endl flushes
 
 /* forward declarations */
-string initial_caps_to_underscores(string name);
-string underscores_to_initial_caps(string name);
-string to_upper_case(string name);
-string to_lower_case(string name);
+inline string initial_caps_to_underscores(string name);
+inline string underscores_to_initial_caps(string name);
+inline string to_upper_case(string name);
+inline string to_lower_case(string name);
 
 /**
  * C code generator, using glib for C typing.
@@ -4484,7 +4484,7 @@ string t_c_glib_generator::generate_new_array_from_type(t_type* ttype) {
 /**
  * Upper case a string.  Wraps boost's string utility.
  */
-string to_upper_case(string name) {
+inline string to_upper_case(string name) {
   string s(name);
   std::transform(s.begin(), s.end(), s.begin(), ::toupper);
   return s;
@@ -4494,7 +4494,7 @@ string to_upper_case(string name) {
 /**
  * Lower case a string.  Wraps boost's string utility.
  */
-string to_lower_case(string name) {
+inline string to_lower_case(string name) {
   string s(name);
   std::transform(s.begin(), s.end(), s.begin(), ::tolower);
   return s;
@@ -4508,7 +4508,7 @@ string to_lower_case(string name) {
  * Input: "ZomgCamelCase"
  * Output: "zomg_camel_case"
  */
-string initial_caps_to_underscores(string name) {
+inline string initial_caps_to_underscores(string name) {
   string ret;
   const char* tmp = name.c_str();
   int pos = 0;
@@ -4536,7 +4536,7 @@ string initial_caps_to_underscores(string name) {
  * Input: "zomg_camel_case"
  * Output: "ZomgCamelCase"
  */
-string underscores_to_initial_caps(string name) {
+inline string underscores_to_initial_caps(string name) {
   string ret;
   const char* tmp = name.c_str();
   bool uppercase_next = true;
