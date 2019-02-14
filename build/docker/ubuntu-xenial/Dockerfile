@@ -60,7 +60,7 @@ RUN curl https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > /et
 # node.js
 RUN curl -sL https://deb.nodesource.com/gpgkey/nodesource.gpg.key | apt-key add - && \
     echo "deb https://deb.nodesource.com/node_6.x xenial main" | tee /etc/apt/sources.list.d/nodesource.list
-    
+
 ### install general dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
 `# General dependencies` \
@@ -115,10 +115,10 @@ RUN mkdir -p /usr/include/dmd/druntime/import/deimos /usr/include/dmd/druntime/i
     mv libevent-master/deimos/* /usr/include/dmd/druntime/import/deimos/ && \
     mv libevent-master/C/* /usr/include/dmd/druntime/import/C/ && \
     rm -rf libevent-master
-RUN curl -sSL https://github.com/D-Programming-Deimos/openssl/archive/master.tar.gz| tar xz && \
-    mv openssl-master/deimos/* /usr/include/dmd/druntime/import/deimos/ && \
-    mv openssl-master/C/* /usr/include/dmd/druntime/import/C/ && \
-    rm -rf openssl-master
+RUN curl -sSL https://github.com/D-Programming-Deimos/openssl/archive/v1.1.6+1.0.1g.tar.gz | tar xz && \
+    mv openssl-1.1.6-1.0.1g/deimos/* /usr/include/dmd/druntime/import/deimos/ && \
+    mv openssl-1.1.6-1.0.1g/C/* /usr/include/dmd/druntime/import/C/ && \
+    rm -rf openssl-1.1.6-1.0.1g
 
 RUN apt-get install -y --no-install-recommends \
 `# Dart dependencies` \
@@ -189,6 +189,13 @@ RUN apt-get install -y --no-install-recommends \
 RUN apt-get install -y --no-install-recommends \
 `# Node.js dependencies` \
       nodejs
+
+# Test dependencies for running puppeteer
+RUN apt-get install -y --no-install-recommends \
+`# JS dependencies` \
+      libxss1 \
+      libatk-bridge2.0-0 \
+      libgtk-3-0
 
 # THRIFT-4517: causes stack overflows; version too old; skip ocaml in xenial
 # RUN apt-get install -y --no-install-recommends \
