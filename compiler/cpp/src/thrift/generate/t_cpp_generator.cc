@@ -1864,10 +1864,6 @@ void t_cpp_generator::generate_service(t_service* tservice) {
   string f_service_name = get_out_dir() + svcname + ".cpp";
   f_service_.open(f_service_name.c_str());
   f_service_ << autogen_comment();
-  f_service_ << "#if defined(_WINDOWS)" << endl
-             << "#   define NOMINMAX" << endl
-             << "#endif" << endl
-             << endl;
   f_service_ << "#include \"" << get_include_prefix(*get_program()) << svcname << ".h\"" << endl;
   if (gen_cob_style_) {
     f_service_ << "#include \"thrift/async/TAsyncChannel.h\"" << endl;
