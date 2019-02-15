@@ -15,45 +15,39 @@ goto :unknown
 
 
 :w32vc12
-	set GENERATOR="Visual Studio 12 2013"
-	set CS_CONFIGURATION=VC12_
-	set CS_PLATFORM=x86
-	set ZLIB_SUFFIX=vc12
+	REM CONAN
+	set COMPILER_VERSION=12
+	set ARCH_TYPE=x86
 	goto :done
 
 :w64vc12
-	set GENERATOR="Visual Studio 12 2013 Win64"
-	set CS_CONFIGURATION=VC12_
-	set CS_PLATFORM=x64
-	set ZLIB_SUFFIX=vc12.x64
+	REM CONAN
+	set COMPILER_VERSION=12
+	set ARCH_TYPE=x86_64
 	goto :done
 
 :w32vc14
-	set GENERATOR="Visual Studio 14 2015"
-	set CS_CONFIGURATION=VC14_
-	set CS_PLATFORM=x86
-	set ZLIB_SUFFIX=vc14
+	REM CONAN
+	set COMPILER_VERSION=14
+	set ARCH_TYPE=x86
 	goto :done
 
 :w64vc14
-	set GENERATOR="Visual Studio 14 2015 Win64"
-	set CS_CONFIGURATION=VC14_
-	set CS_PLATFORM=x64
-	set ZLIB_SUFFIX=vc14.x64
+	REM CONAN
+	set COMPILER_VERSION=14
+	set ARCH_TYPE=x86_64
 	goto :done
 
 :w32vc15
-	set GENERATOR="Visual Studio 15 2017"
-	set CS_CONFIGURATION=VC14_
-	set CS_PLATFORM=x86
-	set ZLIB_SUFFIX=vc14
+	REM CONAN
+	set COMPILER_VERSION=15
+	set ARCH_TYPE=x86
 	goto :done
 
 :w64vc15
-	set GENERATOR="Visual Studio 15 2017 Win64"
-	set CS_CONFIGURATION=VC14_
-	set CS_PLATFORM=x64
-	set ZLIB_SUFFIX=vc14.x64
+	REM CONAN
+	set COMPILER_VERSION=15
+	set ARCH_TYPE=x86_64
 	goto :done
 
 :unknown

@@ -3,54 +3,33 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.28010.2046
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ThriftMSBuildTask", "..\ThriftMSBuildTask\ThriftMSBuildTask.csproj", "{EC0A0231-66EA-4593-A792-C6CA3BB8668E}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Thrift.45", "Thrift.45.csproj", "{EBCE35DA-CF6A-42BC-A357-A9C09B534299}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Thrift", "Thrift.csproj", "{EBCE35DA-CF6A-42BC-A357-A9C09B534299}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
-		VC12_Debug|x64 = VC12_Debug|x64
-		VC12_Debug|x86 = VC12_Debug|x86
-		VC12_Release|x64 = VC12_Release|x64
-		VC12_Release|x86 = VC12_Release|x86
-		VC14_Debug|x64 = VC14_Debug|x64
-		VC14_Debug|x86 = VC14_Debug|x86
-		VC14_Release|x64 = VC14_Release|x64
-		VC14_Release|x86 = VC14_Release|x86
+		Debug|x64 = Debug|x64
+		Debug|x86 = Debug|x86
+		Release|x64 = Release|x64
+		Release|x86 = Release|x86
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{EC0A0231-66EA-4593-A792-C6CA3BB8668E}.VC12_Debug|x64.ActiveCfg = VC12_Debug|x64
-		{EC0A0231-66EA-4593-A792-C6CA3BB8668E}.VC12_Debug|x86.ActiveCfg = VC12_Debug|x86
-		{EC0A0231-66EA-4593-A792-C6CA3BB8668E}.VC12_Release|x64.ActiveCfg = VC12_Release|x64
-		{EC0A0231-66EA-4593-A792-C6CA3BB8668E}.VC12_Release|x86.ActiveCfg = VC12_Release|x86
-		{EC0A0231-66EA-4593-A792-C6CA3BB8668E}.VC14_Debug|x64.ActiveCfg = VC14_Debug|x64
-		{EC0A0231-66EA-4593-A792-C6CA3BB8668E}.VC14_Debug|x86.ActiveCfg = VC14_Debug|x86
-		{EC0A0231-66EA-4593-A792-C6CA3BB8668E}.VC14_Release|x64.ActiveCfg = VC14_Release|x64
-		{EC0A0231-66EA-4593-A792-C6CA3BB8668E}.VC14_Release|x86.ActiveCfg = VC14_Release|x86
-		{EBCE35DA-CF6A-42BC-A357-A9C09B534299}.VC12_Debug|x64.ActiveCfg = VC12_Debug|x64
-		{EBCE35DA-CF6A-42BC-A357-A9C09B534299}.VC12_Debug|x64.Build.0 = VC12_Debug|x64
-		{EBCE35DA-CF6A-42BC-A357-A9C09B534299}.VC12_Debug|x86.ActiveCfg = VC12_Debug|x86
-		{EBCE35DA-CF6A-42BC-A357-A9C09B534299}.VC12_Debug|x86.Build.0 = VC12_Debug|x86
-		{EBCE35DA-CF6A-42BC-A357-A9C09B534299}.VC12_Release|x64.ActiveCfg = VC12_Release|x64
-		{EBCE35DA-CF6A-42BC-A357-A9C09B534299}.VC12_Release|x64.Build.0 = VC12_Release|x64
-		{EBCE35DA-CF6A-42BC-A357-A9C09B534299}.VC12_Release|x86.ActiveCfg = VC12_Release|x86
-		{EBCE35DA-CF6A-42BC-A357-A9C09B534299}.VC12_Release|x86.Build.0 = VC12_Release|x86
-		{EBCE35DA-CF6A-42BC-A357-A9C09B534299}.VC14_Debug|x64.ActiveCfg = VC14_Debug|x64
-		{EBCE35DA-CF6A-42BC-A357-A9C09B534299}.VC14_Debug|x64.Build.0 = VC14_Debug|x64
-		{EBCE35DA-CF6A-42BC-A357-A9C09B534299}.VC14_Debug|x86.ActiveCfg = VC14_Debug|x86
-		{EBCE35DA-CF6A-42BC-A357-A9C09B534299}.VC14_Debug|x86.Build.0 = VC14_Debug|x86
-		{EBCE35DA-CF6A-42BC-A357-A9C09B534299}.VC14_Release|x64.ActiveCfg = VC14_Release|x64
-		{EBCE35DA-CF6A-42BC-A357-A9C09B534299}.VC14_Release|x64.Build.0 = VC14_Release|x64
-		{EBCE35DA-CF6A-42BC-A357-A9C09B534299}.VC14_Release|x86.ActiveCfg = VC14_Release|x86
-		{EBCE35DA-CF6A-42BC-A357-A9C09B534299}.VC14_Release|x86.Build.0 = VC14_Release|x86
+		{EC0A0231-66EA-4593-A792-C6CA3BB8668E}.Debug|x64.ActiveCfg = Debug|x64
+		{EC0A0231-66EA-4593-A792-C6CA3BB8668E}.Debug|x86.ActiveCfg = Debug|x86
+		{EC0A0231-66EA-4593-A792-C6CA3BB8668E}.Release|x64.ActiveCfg = Release|x64
+		{EC0A0231-66EA-4593-A792-C6CA3BB8668E}.Release|x86.ActiveCfg = Release|x86
+		{EBCE35DA-CF6A-42BC-A357-A9C09B534299}.Debug|x64.ActiveCfg = Debug|x64
+		{EBCE35DA-CF6A-42BC-A357-A9C09B534299}.Debug|x64.Build.0 = Debug|x64
+		{EBCE35DA-CF6A-42BC-A357-A9C09B534299}.Debug|x86.ActiveCfg = Debug|x86
+		{EBCE35DA-CF6A-42BC-A357-A9C09B534299}.Debug|x86.Build.0 = Debug|x86
+		{EBCE35DA-CF6A-42BC-A357-A9C09B534299}.Release|x64.ActiveCfg = Release|x64
+		{EBCE35DA-CF6A-42BC-A357-A9C09B534299}.Release|x64.Build.0 = Release|x64
+		{EBCE35DA-CF6A-42BC-A357-A9C09B534299}.Release|x86.ActiveCfg = Release|x86
+		{EBCE35DA-CF6A-42BC-A357-A9C09B534299}.Release|x86.Build.0 = Release|x86
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {6E0ADD46-46BF-4BE2-9FBB-746575920094}
-	EndGlobalSection
-	GlobalSection(MonoDevelopProperties) = preSolution
-		        StartupItem = Thrift.csproj
 	EndGlobalSection
 EndGlobal

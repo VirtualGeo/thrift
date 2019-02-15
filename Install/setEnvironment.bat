@@ -40,11 +40,7 @@ if not defined THRIFT_EXTERNAL (
 )
 
 if not defined THRIFT_GENERATED (
-	set THRIFT_GENERATED=%THRIFT_GENERATED_BASE%\%GENERATED_DIR%\Thrift
-)
-
-if not defined THRIFT_RELEASE (
-	set THRIFT_RELEASE=%THRIFT_GENERATED_BASE%\%GENERATED_DIR%\Release
+	set THRIFT_GENERATED=%THRIFT_GENERATED_BASE%\%GENERATED_DIR%
 )
 
 rem **************************************************************************
