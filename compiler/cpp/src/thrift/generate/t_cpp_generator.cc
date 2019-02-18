@@ -240,11 +240,15 @@ public:
   std::string function_signature(t_function* tfunction,
                                  std::string style,
                                  std::string prefix = "",
-                                 bool name_params = true);
+                                 bool name_params = true,
+                                 bool default_values = false);
   std::string cob_function_signature(t_function* tfunction,
                                      std::string prefix = "",
                                      bool name_params = true);
-  std::string argument_list(t_struct* tstruct, bool name_params = true, bool start_comma = false);
+  std::string argument_list(t_struct* tstruct,
+                            bool name_params = true,
+                            bool start_comma = false,
+                            bool default_values = false);
   std::string type_to_enum(t_type* ttype);
 
   void generate_enum_constant_list(std::ostream& f,
@@ -2023,7 +2027,8 @@ void t_cpp_generator::generate_service_interface(t_service* tservice, string sty
     if ((*f_iter)->has_doc())
       f_header_ << endl;
     generate_java_doc(f_header_, *f_iter);
-    f_header_ << indent() << "virtual " << function_signature(*f_iter, style) << " = 0;" << endl;
+    f_header_ << indent() << "virtual " << function_signature(*f_iter, style, "", true, true)
+              << " = 0;" << endl;
   }
   indent_down();
   f_header_ << "};" << endl << endl;
@@ -2247,7 +2252,7 @@ void t_cpp_generator::generate_service_async_skeleton(t_service* tservice) {
   vector<t_function*>::iterator f_iter;
   for (f_iter = functions.begin(); f_iter != functions.end(); ++f_iter) {
     f_skeleton << endl
-               << indent() << function_signature(*f_iter, "CobSv", "", true) << " {" << endl;
+               << indent() << function_signature(*f_iter, "CobSv", "", true, true) << " {" << endl;
     indent_up();
 
     t_type* returntype = (*f_iter)->get_returntype();
@@ -2545,7 +2550,7 @@ void t_cpp_generator::generate_service_client(t_service* tservice, string style)
   vector<t_function*> functions = tservice->get_functions();
   vector<t_function*>::const_iterator f_iter;
   for (f_iter = functions.begin(); f_iter != functions.end(); ++f_iter) {
-    indent(f_header_) << function_signature(*f_iter, ifstyle) << ";" << endl;
+    indent(f_header_) << function_signature(*f_iter, ifstyle, "", true, true) << ";" << endl;
     // TODO(dreiss): Use private inheritance to avoid generating thise in cob-style.
     if (style == "Concurrent" && !(*f_iter)->is_oneway()) {
       // concurrent clients need to move the seqid from the send function to the
@@ -4608,7 +4613,8 @@ string t_cpp_generator::declare_field(t_field* tfield,
 string t_cpp_generator::function_signature(t_function* tfunction,
                                            string style,
                                            string prefix,
-                                           bool name_params) {
+                                           bool name_params,
+                                           bool default_values) {
   t_type* ttype = tfunction->get_returntype();
   t_struct* arglist = tfunction->get_arglist();
   bool has_xceptions = !tfunction->get_xceptions()->get_members().empty();
@@ -4617,10 +4623,10 @@ string t_cpp_generator::function_signature(t_function* tfunction,
     if (is_complex_type(ttype)) {
       return "void " + prefix + tfunction->get_name() + "(" + type_name(ttype)
              + (name_params ? "& _return" : "& /* _return */")
-             + argument_list(arglist, name_params, true) + ")";
+             + argument_list(arglist, name_params, true, default_values) + ")";
     } else {
       return type_name(ttype) + " " + prefix + tfunction->get_name() + "("
-             + argument_list(arglist, name_params) + ")";
+             + argument_list(arglist, name_params, false, default_values) + ")";
     }
   } else if (style.substr(0, 3) == "Cob") {
     string cob_type;
@@ -4655,7 +4661,10 @@ string t_cpp_generator::function_signature(t_function* tfunction,
  * @param tstruct The struct definition
  * @return Comma sepearated list of all field names in that struct
  */
-string t_cpp_generator::argument_list(t_struct* tstruct, bool name_params, bool start_comma) {
+string t_cpp_generator::argument_list(t_struct* tstruct,
+                                      bool name_params,
+                                      bool start_comma,
+                                      bool default_values) {
   string result = "";
 
   const vector<t_field*>& fields = tstruct->get_members();
@@ -4667,8 +4676,36 @@ string t_cpp_generator::argument_list(t_struct* tstruct, bool name_params, bool 
     } else {
       result += ", ";
     }
+
+    std::string default_value = "";
+    if (default_values) {
+      t_const_value* value = (*f_iter)->get_value();
+      std::string value_str = "";
+
+      if (nullptr != value) {
+        switch (value->get_type()) {
+        case t_const_value::CV_INTEGER:
+          value_str = std::to_string(value->get_integer());
+          break;
+        case t_const_value::CV_DOUBLE:
+          value_str = std::to_string(value->get_double());
+          break;
+        case t_const_value::CV_STRING:
+          value_str = value->get_string();
+          break;
+        default:
+          break;
+        }
+      }
+
+      if (!value_str.empty()) {
+        default_value = " = " + value_str;
+      }
+    }
+
     result += type_name((*f_iter)->get_type(), false, true) + " "
-              + (name_params ? (*f_iter)->get_name() : "/* " + (*f_iter)->get_name() + " */");
+              + (name_params ? (*f_iter)->get_name() + default_value
+                             : "/* " + (*f_iter)->get_name() + " */");
   }
   return result;
 }
