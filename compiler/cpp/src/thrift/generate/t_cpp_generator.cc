@@ -4690,6 +4690,10 @@ string t_cpp_generator::argument_list(t_struct* tstruct,
         case t_const_value::CV_DOUBLE:
           value_str = std::to_string(value->get_double());
           break;
+        case t_const_value::CV_IDENTIFIER: {
+          const std::string sep = gen_pure_enums_ ? "_" : "::";
+          value_str = type_name((*f_iter)->get_type()) + sep + value->get_identifier_name();
+        } break;
         case t_const_value::CV_STRING:
           value_str = value->get_string();
           break;
