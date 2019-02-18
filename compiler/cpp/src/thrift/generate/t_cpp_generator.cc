@@ -4697,6 +4697,18 @@ string t_cpp_generator::argument_list(t_struct* tstruct,
         case t_const_value::CV_STRING:
           value_str = value->get_string();
           break;
+        case t_const_value::CV_LIST:
+          if (!value->get_list().empty()) {
+            throw "Compiler error (c++): Cannot generate default parameters for a non empty list";
+          }
+          value_str = type_name((*f_iter)->get_type()) + "()";
+          break;
+        case t_const_value::CV_MAP:
+          if (!value->get_map().empty()) {
+            throw "Compiler error (c++): Cannot generate default parameters for a non empty list";
+          }
+          value_str = type_name((*f_iter)->get_type()) + "()";
+          break;
         default:
           break;
         }
