@@ -3131,7 +3131,48 @@ string t_csharp_generator::argument_list(t_struct* tstruct) {
     } else {
       result += ", ";
     }
-    result += type_name((*f_iter)->get_type()) + " " + normalize_name((*f_iter)->get_name());
+	
+    std::string default_value = "";
+	t_const_value* value = (*f_iter)->get_value();
+	std::string value_str = "";
+
+    if (nullptr != value) {
+	  switch (value->get_type()) {
+	  case t_const_value::CV_INTEGER:
+		  if((*f_iter)->get_type()->is_bool())
+			  value_str = value->get_integer() ? "true" : "false";
+		  else
+			value_str = std::to_string(value->get_integer());
+        break;
+      case t_const_value::CV_DOUBLE:
+        value_str = std::to_string(value->get_double());
+        break;
+      case t_const_value::CV_IDENTIFIER: {
+        value_str = type_name((*f_iter)->get_type()) + "." + value->get_identifier_name();
+      } break;
+      case t_const_value::CV_STRING:
+        value_str = value->get_string();
+        break;
+      case t_const_value::CV_LIST:
+        if (!value->get_list().empty()) {
+          throw "Compiler error (c++): Cannot generate default parameters for a list";
+        }
+        value_str = "null";
+        break;
+      case t_const_value::CV_MAP:
+        if (!value->get_map().empty()) {
+          throw "Compiler error (c++): Cannot generate default parameters for a map";
+        }
+        value_str = "null";
+        break;
+      }
+    }
+	
+    if (!value_str.empty()) {
+      default_value = " = " + value_str;
+    }
+
+    result += type_name((*f_iter)->get_type()) + " " + normalize_name((*f_iter)->get_name()) + default_value;
   }
   return result;
 }
