@@ -4493,9 +4493,9 @@ void t_java_generator::generate_function_overloads(t_function* tfunction, bool s
 			switch (value->get_type()) {
 			  case t_const_value::CV_INTEGER:
 				if(fields[i]->get_type()->is_bool())
-					func_call += value->get_integer() ? "true" : "false";
+				  func_call += value->get_integer() ? "true" : "false";
 				else
-				func_call += std::to_string(value->get_integer());
+				  func_call += std::to_string(value->get_integer());
 			    break;
 			  case t_const_value::CV_DOUBLE:
 			    func_call += std::to_string(value->get_double());
@@ -4504,7 +4504,7 @@ void t_java_generator::generate_function_overloads(t_function* tfunction, bool s
 				func_call += type_name(fields[i]->get_type()) + "." + value->get_identifier_name();
 			    break;
 			  case t_const_value::CV_STRING:
-			    func_call += value->get_string();
+			    func_call += "\"" + value->get_string() + "\"";
 			    break;
 			  case t_const_value::CV_LIST:
 			    if (!value->get_list().empty()) {

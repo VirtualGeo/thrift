@@ -4695,7 +4695,7 @@ string t_cpp_generator::argument_list(t_struct* tstruct,
           value_str = type_name((*f_iter)->get_type()) + sep + value->get_identifier_name();
         } break;
         case t_const_value::CV_STRING:
-          value_str = value->get_string();
+          value_str = "\"" + value->get_string() + "\"";
           break;
         case t_const_value::CV_LIST:
           if (!value->get_list().empty()) {

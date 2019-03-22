@@ -106,7 +106,7 @@ public:
         }
 		t_const_value* value = p->get_value();
 		if (value != nullptr) {
-			ss << " (default value = " << p->get_value()->get_string();
+			ss << " (default value = ";
 			if (nullptr != value) {
 			  switch (value->get_type()) {
 			  case t_const_value::CV_INTEGER:
@@ -122,7 +122,7 @@ public:
 			    ss << value->get_identifier_name();
 			    break;
 			  case t_const_value::CV_STRING:
-			    ss << value->get_string();
+			    ss << "\"" << value->get_string() << "\"";
 			    break;
 			  case t_const_value::CV_LIST:
 			    if (!value->get_list().empty()) {
