@@ -101,8 +101,47 @@ public:
         t_field* p = *p_iter;
         ss << "\n@param " << p->get_name();
         if (p->has_doc()) {
-          ss << " " << p->get_doc();
+		  std::string doc = p->get_doc();
+          ss << " " << doc.substr(0, doc.size() - 1);
         }
+		t_const_value* value = p->get_value();
+		if (value != nullptr) {
+			ss << " (default value = " << p->get_value()->get_string();
+			if (nullptr != value) {
+			  switch (value->get_type()) {
+			  case t_const_value::CV_INTEGER:
+				if(p->get_type()->is_bool())
+					ss << (value->get_integer() ? "true" : "false");
+				else
+					ss << std::to_string(value->get_integer());
+			    break;
+			  case t_const_value::CV_DOUBLE:
+			    ss << std::to_string(value->get_double());
+			    break;
+			  case t_const_value::CV_IDENTIFIER:
+			    ss << value->get_identifier_name();
+			    break;
+			  case t_const_value::CV_STRING:
+			    ss << value->get_string();
+			    break;
+			  case t_const_value::CV_LIST:
+			    if (!value->get_list().empty()) {
+			  	  throw "Compiler error (c++): Cannot generate default parameters for a non empty list";
+			    }
+				ss << "[]";
+			    break;
+			  case t_const_value::CV_MAP:
+			    if (!value->get_map().empty()) {
+			  	  throw "Compiler error (c++): Cannot generate default parameters for a non empty list";
+			    }
+				ss << "{}";
+			    break;
+			  default:
+			    break;
+			  }
+			}
+			ss << ")";
+		}
       }
       generate_docstring_comment(out, "/**\n", " * ", ss.str(), " */\n");
     }
