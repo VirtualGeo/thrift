@@ -20,6 +20,7 @@
 package org.apache.thrift.protocol;
 
 import org.apache.thrift.TException;
+import org.apache.thrift.transport.TTransport;
 
 /**
  * <code>TMultiplexedProtocol</code> is a protocol-independent concrete decorator
@@ -88,6 +89,21 @@ public class TMultiplexedProtocol extends TProtocolDecorator {
             ));
         } else {
             super.writeMessageBegin(tMessage);
+        }
+    }
+
+    public static class Factory implements TProtocolFactory {
+        TProtocolFactory underlyingProtocolFactory;
+        String serviceName;
+
+        public Factory(TProtocolFactory underlyingProtocolFactory, String serviceName) {
+            this.underlyingProtocolFactory = underlyingProtocolFactory;
+            this.serviceName = serviceName;
+        }
+
+        public TProtocol getProtocol(TTransport trans) {
+            TProtocol protocol = underlyingProtocolFactory.getProtocol(trans);
+            return new TMultiplexedProtocol(protocol, serviceName);
         }
     }
 }
