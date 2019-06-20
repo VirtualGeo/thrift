@@ -133,7 +133,8 @@ public:
                                    bool read = true,
                                    bool write = true,
                                    bool swap = false,
-                                   bool is_user_struct = false);
+                                   bool is_user_struct = false,
+								   bool default_value = false);
   void generate_struct_definition(std::ostream& out,
                                   std::ostream& force_cpp_out,
                                   t_struct* tstruct,
@@ -876,7 +877,7 @@ void t_cpp_generator::generate_forward_declaration(t_struct* tstruct) {
  * @param tstruct The struct definition
  */
 void t_cpp_generator::generate_cpp_struct(t_struct* tstruct, bool is_exception) {
-  generate_struct_declaration(f_types_, tstruct, is_exception, false, true, true, true, true);
+  generate_struct_declaration(f_types_, tstruct, is_exception, false, true, true, true, true, true);
   generate_struct_definition(f_types_impl_, f_types_impl_, tstruct, true, true);
 
   std::ostream& out = (gen_templates_ ? f_types_tcc_ : f_types_impl_);
@@ -1024,7 +1025,8 @@ void t_cpp_generator::generate_struct_declaration(ostream& out,
                                                   bool read,
                                                   bool write,
                                                   bool swap,
-                                                  bool is_user_struct) {
+                                                  bool is_user_struct,
+												  bool default_value) {
 
   string extends = "";
   if (is_exception) {
@@ -1165,6 +1167,28 @@ void t_cpp_generator::generate_struct_declaration(ostream& out,
         else
           out << ", ";
         out << (*m_iter)->get_type()->get_name() << " _" << (*m_iter)->get_name();
+
+		t_const_value* value = (*m_iter)->get_value();
+		if (default_value && value) {
+			std::string value_str = "";
+
+			if (nullptr != value) {
+				switch (value->get_type()) {
+				case t_const_value::CV_INTEGER:
+					value_str = std::to_string(value->get_integer());
+					break;
+				case t_const_value::CV_DOUBLE:
+					value_str = std::to_string(value->get_double());
+					break;
+				case t_const_value::CV_STRING:
+					value_str = value->get_string();
+					break;
+				default:
+					break;
+				}
+			}
+			out << " = " << value_str;
+		}
       }
     }
     out << ")" << endl;
