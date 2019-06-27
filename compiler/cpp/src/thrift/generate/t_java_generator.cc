@@ -152,6 +152,7 @@ public:
 
   void generate_java_struct(t_struct* tstruct, bool is_exception);
 
+  void generate_constructor_overrides(std::ostream& out, t_struct* tstruct);
   void generate_java_struct_definition(std::ostream& out,
                                        t_struct* tstruct,
                                        bool is_xception = false,
@@ -322,7 +323,7 @@ public:
   std::string base_type_name(t_base_type* tbase, bool in_container = false);
   std::string declare_field(t_field* tfield, bool init = false, bool comment = false);
   std::string function_signature(t_function* tfunction, std::string prefix = "");
-  void generate_function_overloads(t_function* tfunction, bool signature_only = true, bool async = false, std::string prefix = "");
+  void generate_function_overrides(t_function* tfunction, bool signature_only = true, bool async = false, std::string prefix = "");
   std::string function_signature_async(t_function* tfunction,
                                        bool use_base_method = false,
                                        std::string prefix = "");
@@ -335,6 +336,7 @@ public:
                                   t_struct* tstruct,
                                   t_type* ttype,
                                   bool include_types = false);
+  std::string get_field_value_as_string(t_field* field);
   std::string type_to_enum(t_type* ttype);
   void generate_struct_desc(ostream& out, t_struct* tstruct);
   void generate_field_descs(ostream& out, t_struct* tstruct);
@@ -1412,6 +1414,56 @@ void t_java_generator::generate_union_hashcode(ostream& out, t_struct* tstruct) 
 }
 
 /**
+ * Renders a function's overrides to match default parameters
+ *
+ * @param out : output stream
+ * @param tstruct : the class
+ */
+void t_java_generator::generate_constructor_overrides(std::ostream& out, t_struct* tstruct)
+{
+	const vector<t_field*>& fields = tstruct->get_members();
+	unsigned first_default_value = fields.size();
+	for (unsigned i = fields.size() ; i > 0 ; i--)
+	{
+		if (fields[i - 1]->get_value() == NULL)
+		{
+			first_default_value = i;
+			break;
+		}
+		else if (i == 1)
+		{
+			first_default_value = 1; // Default constructor will be generated with all members anyway.
+		}
+	}
+
+	// no default parameter
+	if (first_default_value == fields.size())
+	{
+		return;
+	}
+
+	for (unsigned i = fields.size() - 1 ; i >= first_default_value ; i--)
+	{
+		string ctor_signature = "public " + tstruct->get_name() + "(" + argument_list(tstruct, i) + ")";
+		
+		indent(out) << ctor_signature << " {" << endl;
+		indent_up();
+		string ctor_call = "this(";
+		for (unsigned j = 0; j < i; j++)
+		{
+			ctor_call += fields[j]->get_name() + ", ";
+		}
+
+		ctor_call += get_field_value_as_string(fields[i]);
+
+		ctor_call += ");";
+		indent(out) << ctor_call << endl;
+		indent_down();
+		indent(out) << "}" << endl << endl;
+	}
+}
+
+/**
  * Java struct definition. This has various parameters, as it could be
  * generated standalone or inside another class as a helper. If it
  * is a helper than it is a static class.
@@ -1597,6 +1649,8 @@ void t_java_generator::generate_java_struct_definition(ostream& out,
 
     indent_down();
     indent(out) << "}" << endl << endl;
+
+	generate_constructor_overrides(out, tstruct);
   }
 
   // copy constructor
@@ -2890,7 +2944,7 @@ void t_java_generator::generate_service_interface(t_service* tservice) {
   for (f_iter = functions.begin(); f_iter != functions.end(); ++f_iter) {
     generate_java_doc(f_service_, *f_iter);
     indent(f_service_) << "public " << function_signature(*f_iter) << ";" << endl << endl;
-	generate_function_overloads(*f_iter);
+	generate_function_overrides(*f_iter);
   }
   indent_down();
   f_service_ << indent() << "}" << endl << endl;
@@ -3024,7 +3078,7 @@ void t_java_generator::generate_service_client(t_service* tservice) {
     }
     scope_down(f_service_);
     f_service_ << endl;
-	generate_function_overloads(*f_iter, false);
+	generate_function_overrides(*f_iter, false);
 
     t_function send_function(g_type_void,
                              string("send") + sep + javaname,
@@ -3171,7 +3225,7 @@ void t_java_generator::generate_service_async_client(t_service* tservice) {
     indent(f_service_) << "}" << endl;
 
     f_service_ << endl;
-	generate_function_overloads(*f_iter, false, true);
+	generate_function_overrides(*f_iter, false, true);
 
     // TAsyncMethod object for this function call
     indent(f_service_) << "public static class " + funclassname
@@ -4424,14 +4478,14 @@ string t_java_generator::function_signature(t_function* tfunction, string prefix
 }
 
 /**
- * Renders a function's overloads to match default parameters
+ * Renders a function's overrides to match default parameters
  *
- * @param tfunction : function to overload
+ * @param tfunction : function to override
  * @param signature_only : specifies whether we want the header only or the full body
  * @param async : tells whether the function is async or not (will add a out parameter)
  * @param prefix
  */
-void t_java_generator::generate_function_overloads(t_function* tfunction, bool signature_only, bool async, string prefix)
+void t_java_generator::generate_function_overrides(t_function* tfunction, bool signature_only, bool async, string prefix)
 {
 	// count default values for parameters
 	const vector<t_field*>& fields = tfunction->get_arglist()->get_members();
@@ -4443,6 +4497,10 @@ void t_java_generator::generate_function_overloads(t_function* tfunction, bool s
 			first_default_value = i;
 			break;
 		}
+		else if (i == 1)
+		{
+			first_default_value = 0;
+		}
 	}
 	
 	// no default parameter
@@ -4451,7 +4509,7 @@ void t_java_generator::generate_function_overloads(t_function* tfunction, bool s
 		return;
 	}
 
-	for (unsigned i = fields.size() - 1 ; i >= first_default_value ; i--)
+	for (unsigned i = fields.size() ; i > first_default_value ; i--)
 	{
 		t_type* ttype = tfunction->get_returntype();
 		std::string fn_name = get_rpc_method_name(tfunction->get_name());
@@ -4461,7 +4519,7 @@ void t_java_generator::generate_function_overloads(t_function* tfunction, bool s
 		// generate signature
 		string return_type = (async ? "void" : type_name(ttype));
 		string func_signature = "public " + return_type + " " + prefix + fn_name + "("
-							 + argument_list(tfunction->get_arglist(), i);
+							 + argument_list(tfunction->get_arglist(), i - 1);
 		if (async) func_signature += ", org.apache.thrift.async.AsyncMethodCallback<" + type_name(ttype, true) + "> " + "resultHandler";
 		func_signature += ") throws ";
 		t_struct* xs = tfunction->get_xceptions();
@@ -4484,43 +4542,13 @@ void t_java_generator::generate_function_overloads(t_function* tfunction, bool s
 				func_call += "return ";
 			}
 			func_call += fn_name + "(";
-			for (unsigned j = 0; j < i; j++)
+			for (unsigned j = 0 ; j < i - 1 ; j++)
 			{
 				func_call += fields[j]->get_name() + ", ";
 			}
 			
-			t_const_value* value = fields[i]->get_value();
-			switch (value->get_type()) {
-			  case t_const_value::CV_INTEGER:
-				if(fields[i]->get_type()->is_bool())
-				  func_call += value->get_integer() ? "true" : "false";
-				else
-				  func_call += std::to_string(value->get_integer());
-			    break;
-			  case t_const_value::CV_DOUBLE:
-			    func_call += std::to_string(value->get_double());
-			    break;
-			  case t_const_value::CV_IDENTIFIER:
-				func_call += type_name(fields[i]->get_type()) + "." + value->get_identifier_name();
-			    break;
-			  case t_const_value::CV_STRING:
-			    func_call += "\"" + value->get_string() + "\"";
-			    break;
-			  case t_const_value::CV_LIST:
-			    if (!value->get_list().empty()) {
-			  	  throw "Compiler error (c++): Cannot generate default parameters for a non empty list";
-			    }
-			    if (!value->get_map().empty()) {
-			  	  throw "Compiler error (c++): Cannot generate default parameters for a non empty list";
-			    }
-				func_call += "new " + type_name(fields[i]->get_type(), true, true) + "()";
-			    break;
-			  case t_const_value::CV_MAP:
-				func_call += "new " + type_name(fields[i]->get_type(), true, true) + "()";
-			    break;
-			  default:
-			    break;
-			}
+			func_call += get_field_value_as_string(fields[i - 1]);
+
 			if (async) func_call += ", resultHandler";
 			func_call += ");";
 			indent(f_service_) << func_call << endl;
@@ -4648,6 +4676,35 @@ string t_java_generator::async_argument_list(t_function* tfunct,
   }
   result += "resultHandler";
   return result;
+}
+
+std::string t_java_generator::get_field_value_as_string(t_field* field)
+{
+	t_const_value* value = field->get_value();
+	switch (value->get_type()) {
+		case t_const_value::CV_INTEGER:
+			if(field->get_type()->is_bool())
+				return value->get_integer() ? "true" : "false";
+			else
+				return std::to_string(value->get_integer());
+		case t_const_value::CV_DOUBLE:
+			return std::to_string(value->get_double());
+		case t_const_value::CV_IDENTIFIER:
+			return type_name(field->get_type()) + "." + value->get_identifier_name();
+		case t_const_value::CV_STRING:
+			return "\"" + value->get_string() + "\"";
+		case t_const_value::CV_LIST:
+			if (!value->get_list().empty()) {
+				throw "Compiler error (c++): Cannot generate default parameters for a non empty list";
+			}
+			if (!value->get_map().empty()) {
+				throw "Compiler error (c++): Cannot generate default parameters for a non empty list";
+			}
+			return "new " + type_name(field->get_type(), true, true) + "()";
+		case t_const_value::CV_MAP:
+			return "new " + type_name(field->get_type(), true, true) + "()";
+	}
+	return "";
 }
 
 /**
