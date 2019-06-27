@@ -205,6 +205,7 @@ public:
   std::string function_signature_async(t_function* tfunction, std::string prefix = "");
   std::string function_signature(t_function* tfunction, std::string prefix = "");
   std::string argument_list(t_struct* tstruct);
+  std::string field_value_to_string(t_field* tfield);
   std::string type_to_enum(t_type* ttype);
   std::string prop_name(t_field* tfield, bool suppress_mapping = false);
   std::string get_enum_class_name(t_type* type);
@@ -844,6 +845,9 @@ void t_csharp_generator::generate_csharp_struct_definition(ostream& out,
           out << ", ";
         }
         out << type_name((*m_iter)->get_type()) << " " << normalize_name((*m_iter)->get_name());
+	    
+	    string value_str = field_value_to_string(*m_iter);
+	    if (!value_str.empty()) out << " = " << value_str;
       }
     }
     out << ") : this() {" << endl;
@@ -3137,35 +3141,7 @@ string t_csharp_generator::argument_list(t_struct* tstruct) {
 	std::string value_str = "";
 
     if (nullptr != value) {
-	  switch (value->get_type()) {
-	  case t_const_value::CV_INTEGER:
-		  if((*f_iter)->get_type()->is_bool())
-			  value_str = value->get_integer() ? "true" : "false";
-		  else
-			value_str = std::to_string(value->get_integer());
-        break;
-      case t_const_value::CV_DOUBLE:
-        value_str = std::to_string(value->get_double());
-        break;
-      case t_const_value::CV_IDENTIFIER: {
-        value_str = type_name((*f_iter)->get_type()) + "." + value->get_identifier_name();
-      } break;
-      case t_const_value::CV_STRING:
-        value_str = "\"" + value->get_string() + "\"";
-        break;
-      case t_const_value::CV_LIST:
-        if (!value->get_list().empty()) {
-          throw "Compiler error (c++): Cannot generate default parameters for a list";
-        }
-        value_str = "null";
-        break;
-      case t_const_value::CV_MAP:
-        if (!value->get_map().empty()) {
-          throw "Compiler error (c++): Cannot generate default parameters for a map";
-        }
-        value_str = "null";
-        break;
-      }
+		value_str = field_value_to_string((*f_iter));
     }
 	
     if (!value_str.empty()) {
@@ -3175,6 +3151,38 @@ string t_csharp_generator::argument_list(t_struct* tstruct) {
     result += type_name((*f_iter)->get_type()) + " " + normalize_name((*f_iter)->get_name()) + default_value;
   }
   return result;
+}
+
+string t_csharp_generator::field_value_to_string(t_field* tfield)
+{
+	t_const_value* value = tfield->get_value();
+	if (nullptr != value) {
+		switch (value->get_type()) {
+		case t_const_value::CV_INTEGER:
+			if(tfield->get_type()->is_bool())
+				return value->get_integer() ? "true" : "false";
+			else
+				return std::to_string(value->get_integer());
+		case t_const_value::CV_DOUBLE:
+			return std::to_string(value->get_double());
+		case t_const_value::CV_IDENTIFIER: {
+			return type_name(tfield->get_type()) + "." + value->get_identifier_name();
+			} break;
+		case t_const_value::CV_STRING:
+			return "\"" + value->get_string() + "\"";
+		case t_const_value::CV_LIST:
+			if (!value->get_list().empty()) {
+				throw "Compiler error (c++): Cannot generate default parameters for a list";
+			}
+			return "null";
+		case t_const_value::CV_MAP:
+			if (!value->get_map().empty()) {
+				throw "Compiler error (c++): Cannot generate default parameters for a map";
+			}
+			return "null";
+		}
+	}
+	return "";
 }
 
 string t_csharp_generator::type_to_enum(t_type* type) {
