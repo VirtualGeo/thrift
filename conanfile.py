@@ -1,5 +1,5 @@
 from conans import ConanFile, CMake, MSBuild, tools
-import shutil, os
+import shutil, os, stat
 
 class ThriftConan(ConanFile):
 	name = "thrift"
@@ -25,6 +25,12 @@ class ThriftConan(ConanFile):
 	def source(self):
 		shutil.move("CMakeLists.txt", "CMakeListsOriginal.txt")
 		shutil.move(os.path.join("build", "conan", "CMakeLists.txt"), "CMakeLists.txt")
+
+		# Set gradlew executable to be executable
+		if self.settings.os != "Windows":
+			gradlew = os.path.join("lib", "java", "gradlew")
+			st = os.stat(gradlew)
+			os.chmod(gradlew, st.st_mode | stat.S_IEXEC)
 
 	def configure_cmake(self):
 		cmake = CMake(self)
