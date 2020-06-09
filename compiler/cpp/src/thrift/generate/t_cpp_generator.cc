@@ -1166,7 +1166,34 @@ void t_cpp_generator::generate_struct_declaration(ostream& out,
           first = false;
         else
           out << ", ";
-        out << (*m_iter)->get_type()->get_name() << " _" << (*m_iter)->get_name();
+        auto type_name = (*m_iter)->get_type()->get_name();
+
+        if (type_name == "i8")
+        {
+          out << "int8_t";
+        }
+        else if (type_name == "i16")
+        {
+          out << "int16_t";
+        }
+        else if (type_name == "i32")
+        {
+          out << "int32_t";
+        }
+        else if (type_name == "i64")
+        {
+          out << "int64_t";
+        }
+        else if (type_name == "string")
+        {
+          out << "std::string";
+        }
+        else
+        {
+          out << type_name;
+        }
+
+        out << " _" << (*m_iter)->get_name();
 
 		t_const_value* value = (*m_iter)->get_value();
 		if (default_value && value) {
