@@ -1454,7 +1454,7 @@ void t_java_generator::generate_constructor_overrides(std::ostream& out, t_struc
 			ctor_call += fields[j]->get_name() + ", ";
 		}
 
-		ctor_call += get_field_value_as_string(fields[i]);
+		ctor_call += "(" + type_name(fields[i]->get_type()) + ")" + get_field_value_as_string(fields[i]);
 
 		ctor_call += ");";
 		indent(out) << ctor_call << endl;
