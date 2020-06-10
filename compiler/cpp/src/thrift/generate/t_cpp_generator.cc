@@ -1171,24 +1171,24 @@ void t_cpp_generator::generate_struct_declaration(ostream& out,
 
         t_const_value* value = (*m_iter)->get_value();
         if (default_value && value) {
-            std::string value_str = "";
+          std::string value_str = "";
 
-            if (nullptr != value) {
-                switch (value->get_type()) {
-                case t_const_value::CV_INTEGER:
-                    value_str = std::to_string(value->get_integer());
-                    break;
-                case t_const_value::CV_DOUBLE:
-                    value_str = std::to_string(value->get_double());
-                    break;
-                case t_const_value::CV_STRING:
-                    value_str = value->get_string();
-                    break;
-                default:
-                    break;
-                }
+          if (nullptr != value) {
+            switch (value->get_type()) {
+            case t_const_value::CV_INTEGER:
+              value_str = std::to_string(value->get_integer());
+              break;
+            case t_const_value::CV_DOUBLE:
+              value_str = std::to_string(value->get_double());
+              break;
+            case t_const_value::CV_STRING:
+              value_str = value->get_string();
+              break;
+            default:
+              break;
             }
-            out << " = " << value_str;
+          }
+          out << " = " << value_str;
         }
       }
     }
