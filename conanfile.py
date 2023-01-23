@@ -19,6 +19,7 @@ class ThriftConan(ConanFile):
 		if self.settings.os == "Windows":
 			self.requires("winflexbison/2.5.16@dxt/stable")
 
+		#self.options["OpenSSL"].shared = False
 		self.options["boost"].shared = False
 
 	def source(self):
