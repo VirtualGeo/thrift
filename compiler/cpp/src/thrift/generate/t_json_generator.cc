@@ -68,23 +68,23 @@ public:
     out_dir_base_ = "gen-json";
   }
 
-  virtual ~t_json_generator() {}
+  ~t_json_generator() override = default;
 
   /**
   * Init and close methods
   */
+  void init_generator() override;
+  void close_generator() override;
+//  std::string display_name() const override;
 
-  void init_generator();
-  void close_generator();
-
-  void generate_typedef(t_typedef* ttypedef);
-  void generate_enum(t_enum* tenum);
-  void generate_program();
+  void generate_typedef(t_typedef* ttypedef) override;
+  void generate_enum(t_enum* tenum) override;
+  void generate_program() override;
   void generate_function(t_function* tfunc);
   void generate_field(t_field* field);
 
-  void generate_service(t_service* tservice);
-  void generate_struct(t_struct* tstruct);
+  void generate_service(t_service* tservice) override;
+  void generate_struct(t_struct* tstruct) override;
 
 private:
   bool should_merge_includes_;
@@ -147,8 +147,8 @@ void t_json_generator::init_generator() {
 
 string t_json_generator::escape_json_string(const string& input) {
   std::ostringstream ss;
-  for (std::string::const_iterator iter = input.begin(); iter != input.end(); iter++) {
-    switch (*iter) {
+  for (char iter : input) {
+    switch (iter) {
     case '\\':
       ss << "\\\\";
       break;
@@ -174,7 +174,7 @@ string t_json_generator::escape_json_string(const string& input) {
       ss << "\\t";
       break;
     default:
-      ss << *iter;
+      ss << iter;
       break;
     }
   }
@@ -245,7 +245,7 @@ void t_json_generator::end_array() {
 
 void t_json_generator::write_type_spec_object(const char* name, t_type* ttype) {
   ttype = ttype->get_true_type();
-  if (ttype->is_struct() || ttype->is_xception() || ttype->is_container()) {
+  if (ttype->is_struct() || ttype->is_xception() || ttype->is_container() || ttype->is_enum()) {
     write_key_and(name);
     start_object(NO_INDENT);
     write_key_and("typeId");
@@ -273,7 +273,7 @@ void t_json_generator::write_type_spec(t_type* ttype) {
     end_object();
   }
 
-  if (ttype->is_struct() || ttype->is_xception()) {
+  if (ttype->is_struct() || ttype->is_xception() || ttype->is_enum()) {
     write_key_and_string("class", get_qualified_name(ttype));
   } else if (ttype->is_map()) {
     t_type* ktype = ((t_map*)ttype)->get_key_type();
@@ -370,6 +370,7 @@ void t_json_generator::generate_program() {
     vector<t_program*>::const_iterator inc_it;
     for (inc_it = includes.begin(); inc_it != includes.end(); ++inc_it) {
       write_comma_if_needed();
+      f_json_ << indent();
       write_string((*inc_it)->get_name());
       indicate_comma_needed();
     }
@@ -765,7 +766,7 @@ string t_json_generator::get_type_name(t_type* ttype) {
     return "map";
   }
   if (ttype->is_enum()) {
-    return "i32";
+    return "enum";
   }
   if (ttype->is_struct()) {
     return ((t_struct*)ttype)->is_union() ? "union" : "struct";
@@ -787,6 +788,11 @@ string t_json_generator::get_qualified_name(t_type* ttype) {
   }
   return ttype->get_program()->get_name() + "." + ttype->get_name();
 }
+
+/*std::string t_json_generator::display_name() const {
+  return "JSON";
+}*/
+
 
 THRIFT_REGISTER_GENERATOR(json,
                           "JSON",
