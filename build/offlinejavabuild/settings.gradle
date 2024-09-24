@@ -22,6 +22,7 @@ pluginManagement {
     repositories {
         maven {
             url "SIMENV_GRADLE_URL/gradle/gradlecache"
+	    setAllowInsecureProtocol(true);
         }
     }
 }

@@ -45,8 +45,8 @@ sourceSets {
 // ----------------------------------------------------------------------------
 // Compiler configuration details
 
-sourceCompatibility = '1.6'
-targetCompatibility = '1.6'
+sourceCompatibility = '17'
+targetCompatibility = '17'
 
 tasks.withType(JavaCompile) {
     options.encoding = 'UTF-8'

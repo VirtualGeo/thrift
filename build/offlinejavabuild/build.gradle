@@ -20,14 +20,19 @@
 // Using the legacy plugin classpath for Clover so it can be loaded optionally
 // SIMENV_GRADLE_URL is a string replace by the thrift conan recipe (ie. http://127.0.0.1:3000)
 buildscript {
-    repositories {
-//        google()
-//        jcenter()
-//        gradlePluginPortal()
+    // strictly enforce the minimum version of Java required to build and fail fast
+    if (JavaVersion.current() < JavaVersion.VERSION_1_8) {
+        throw new GradleException("The java version used is ${JavaVersion.current()}, but must be at least ${JavaVersion.VERSION_1_8}")
+    }
 
+    repositories {
+	//mavenCentral()
+        //google()
+        //gradlePluginPortal()
         maven {
             url "SIMENV_GRADLE_URL/gradle/gradlecache"
-        } 	
+            setAllowInsecureProtocol(true);
+        }
     }
 
     dependencies {
@@ -37,9 +42,12 @@ buildscript {
 
 plugins {
     id 'java'
-    id 'maven'
+    id 'maven-publish'
     id 'signing'
-    id 'com.github.johnrengelman.shadow' version '2.0.2'
+    id 'pmd'
+    id 'com.github.johnrengelman.shadow' version '8.1.1'
+    id "com.github.spotbugs" version "5.2.5"
+    id "com.diffplug.spotless" version "6.25.0"
 }
 
 description = 'Apache Thrift Java Library'
